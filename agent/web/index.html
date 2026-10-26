@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chain of Evidence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0F2233; --ink-2:#2B4257; --muted:#5D6E7D; --faint:#8A97A3;
+  --paper:#F6F4EF; --card:#FFFFFF; --line:#E3DFD6; --line-2:#D3CEC2;
+  --gold:#C8902B; --gold-bg:#FBF1DE; --gold-ink:#8A5E12; --teal:#1F7F74;
+  --blue:#2D5F95; --blue-bg:#E5EEF8; --coral:#B6472A; --coral-bg:#FBE9E3;
+  --purple:#5A4FB0; --purple-bg:#ECEAFB; --green:#3C7A2A; --green-bg:#E8F3E0;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 Manrope,system-ui,-apple-system,sans-serif}
+header{display:flex;align-items:center;gap:14px;padding:16px 28px;background:var(--ink);color:#F5F3EE}
+header .name{font-weight:700;font-size:19px;letter-spacing:-.01em}
+header .tag{color:#AFC0CF;font-size:13px}
+header .mode{margin-left:auto;font-size:12.5px;padding:5px 11px;border-radius:999px;border:1px solid #3B536A;color:#D4DEE7;white-space:nowrap}
+header .mode b{color:#E8C27A;font-weight:600}
+main{max-width:1240px;margin:0 auto;padding:22px 28px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-top:18px}
+main > .card:first-child{margin-top:0}
+h2{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+.ask{display:flex;gap:10px}
+.ask input{flex:1;font:inherit;font-size:17px;padding:13px 16px;border:1px solid var(--line-2);border-radius:10px;background:#FCFBF8;color:var(--ink);outline:none}
+.ask input:focus{border-color:var(--ink-2);background:#fff}
+button{font:inherit;font-weight:600;cursor:pointer;border-radius:10px;border:1px solid var(--ink);background:var(--ink);color:#fff;padding:0 22px}
+button:disabled{opacity:.45;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.chips .lbl{font-size:13px;color:var(--muted);margin-right:2px}
+.chip{font-size:13.5px;padding:7px 12px;border-radius:999px;border:1px solid var(--line-2);background:#fff;color:var(--ink);font-weight:500}
+.chip:hover:not(:disabled){border-color:var(--ink-2);background:#F1EEE6}
+.chip span{color:var(--muted);font-weight:400}
+.intake{margin-top:12px;font-size:14px;color:var(--ink-2);min-height:20px}
+@keyframes pulse{50%{opacity:.25}}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* agent strip */
+.teamhead{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:12px}
+.teamhead h2{margin:0}
+.stats{display:flex;gap:20px;margin-left:auto;flex-wrap:wrap}
+.stat{text-align:right} .stat .n{font-size:20px;font-weight:700;line-height:1.1} .stat .t{font-size:11.5px;color:var(--muted)}
+.stat.loop .n{color:var(--gold)} .stat.rb .n{color:var(--coral)}
+.agents{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.agent{border:1.5px solid var(--ink);border-radius:10px;padding:8px 10px;background:#fff;transition:box-shadow .3s,border-color .3s}
+.agent .nm{font-weight:700;font-size:15px}
+.agent .rl{font-size:11.5px;color:var(--muted)}
+.agent .stt{font-size:11.5px;font-weight:600;margin-top:4px;color:var(--faint);display:flex;align-items:center;gap:6px}
+.agent .stt .lt{width:7px;height:7px;border-radius:50%;background:#C9CFD5}
+.agent.working{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-bg)}
+.agent.working .stt{color:var(--gold-ink)} .agent.working .stt .lt{background:var(--gold);animation:pulse 1s infinite}
+.agent.you{border-color:var(--line-2);background:#FBFAF7}
+
+/* answer */
+.answer{margin-top:18px;border-radius:14px;overflow:hidden;border:1px solid var(--ink);background:#fff;animation:in .5s}
+.answer .top{background:var(--ink);color:#F5F3EE;padding:18px 22px}
+.answer .k{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#E8C27A;font-weight:600}
+.answer .h{font-size:22px;font-weight:700;line-height:1.35;margin-top:4px}
+.answer .inner{padding:18px 22px}
+.chain{display:flex;align-items:stretch;flex-wrap:nowrap;gap:0;margin:4px 0 14px}
+.chain .lnk{display:flex;align-items:center;color:var(--faint);font-size:20px;padding:0 8px}
+.cbox{border:1.5px solid var(--line-2);border-radius:10px;padding:8px 12px;flex:1 1 0;min-width:0;background:#fff}
+.cbox .l{font-size:12.5px;color:var(--muted)} .cbox .v{font:600 16px var(--mono)} .cbox .t{font-size:11.5px;color:var(--faint)}
+.cbox.area{background:#F1EEE6;border-color:#F1EEE6;display:flex;flex-direction:column;justify-content:center;flex:0 0 auto}
+.cbox.area .v{font:700 14px Manrope,sans-serif}
+.cbox.ok .v{color:var(--muted)} .cbox.off{border-color:var(--gold)} .cbox.off .v{color:var(--gold-ink)}
+.cbox.cause{background:var(--ink);border-color:var(--ink);color:#fff;flex:1.3 1 0}
+.cbox.cause .l{color:#E8C27A} .cbox.cause .v{font:700 15px Manrope,sans-serif} .cbox.cause .t{color:#AFC0CF}
+.act{font-size:14.5px;margin:-4px 0 14px} .act b{color:var(--teal)}
+.rbnote{font-size:14px;background:var(--coral-bg);color:var(--coral);border-radius:8px;padding:8px 12px;margin-top:4px}
+.rbnote b{font-weight:700}
+
+/* story */
+.story{position:relative}
+.step{display:grid;grid-template-columns:34px 1fr;gap:14px;padding:12px 0;border-top:1px solid #EFECE5;animation:in .4s}
+.step:first-child{border-top:0}
+.num{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.shead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.stitle{font-weight:700;font-size:16px}
+.who{font-size:12.5px;color:var(--muted)} .who b{color:var(--ink-2);font-weight:600}
+.stext{font-size:14.5px;color:var(--ink-2);margin-top:2px}
+.step.loop .num{background:var(--gold)} .step.loop .stitle{color:var(--gold-ink)}
+.step.challenge .num{background:var(--purple)} .step.challenge .stitle{color:var(--purple)}
+.step.rollback .num{background:var(--coral)} .step.rollback .stitle{color:var(--coral)}
+.step.report .num{background:var(--green)} .step.report .stitle{color:var(--green)}
+.lines{margin-top:6px}
+.line{font-size:14px;padding:6px 10px;border-radius:7px;margin-top:5px;background:#F6F4EF;animation:in .35s}
+.line.rb{background:var(--coral-bg);color:var(--coral);font-weight:600}
+.line.up{background:var(--purple-bg);color:var(--purple)}
+.line.ok{background:var(--green-bg);color:var(--green);font-weight:600}
+.line.veto{background:var(--coral-bg);color:var(--coral)}
+.finds{margin-top:8px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.find{display:grid;grid-template-columns:130px 1fr 150px;gap:12px;align-items:center;padding:8px 12px;border-top:1px solid #F0EDE6;animation:in .35s;font-size:14px}
+.find:first-child{border-top:0}
+.find .lb{font-weight:600} .find .why{font-size:12px;color:var(--muted);font-weight:400}
+.find .vv{font:500 14px var(--mono);text-align:right} .find .vv small{display:block;font:11.5px Manrope,sans-serif;color:var(--faint)}
+.find .trail{font-size:12px;color:var(--muted);margin-top:2px}
+.find .trail span{margin-right:8px}
+.find .trail .ok{color:var(--blue);font-weight:600}
+.find.rolled .lb,.find.rolled .vv{text-decoration:line-through;color:var(--faint)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap;text-align:center}
+.p-checking{background:#EEF0F2;color:var(--muted);animation:pulse 1.2s infinite}
+.p-healthy{background:#EEF0F2;color:var(--muted)} .p-off{background:var(--gold-bg);color:var(--gold-ink)}
+.p-confirmed{background:var(--blue-bg);color:var(--blue)} .p-cause{background:var(--ink);color:#fff}
+.p-rolled{background:var(--coral-bg);color:var(--coral)} .p-upheld{background:var(--purple-bg);color:var(--purple)}
+.p-other{background:#EEF0F2;color:var(--ink-2)}
+.pend{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--gold-ink);font-weight:600;background:var(--gold-bg);padding:4px 12px;border-radius:999px;margin:10px 0 0 48px}
+.pend i{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:pulse 1s infinite}
+
+/* details */
+.toggle{background:#fff;color:var(--ink);border:1px solid var(--line-2);padding:8px 14px;font-size:14px;margin-top:14px}
+.seqwrap{margin-top:12px;border:1px solid var(--line);border-radius:12px;max-height:560px;overflow:auto}
+.lanes-head{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-bottom:1px solid var(--line);padding:8px 12px;font-weight:700;font-size:13px;text-align:center}
+.seq{position:relative;padding:6px 12px 14px}
+.lane{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed #D9D4C9}
+.row{position:relative;height:42px}
+.arrow{position:absolute;top:30px;height:2.5px;background:var(--c,var(--ink-2));border-radius:2px}
+.arrow::after{content:"";position:absolute;top:-5px;border:6px solid transparent}
+.arrow.r::after{right:-7px;border-left:8px solid var(--c,var(--ink-2));border-right:0}
+.arrow.l::after{left:-7px;border-right:8px solid var(--c,var(--ink-2));border-left:0}
+.cap{position:absolute;top:3px;transform:translateX(-50%);max-width:48%;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
+.cap b{font:600 11px var(--mono);margin-right:5px}
+.k-verify{--c:var(--blue)} .k-loop{--c:var(--gold)} .k-challenge{--c:var(--purple)} .k-rollback,.k-veto{--c:var(--coral)} .k-approve{--c:var(--green)}
+.details{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:12px;font-weight:600;color:var(--muted);padding:6px;border-bottom:1px solid var(--line)}
+td{padding:7px 6px;border-bottom:1px solid #F0EDE6;vertical-align:top} td.m{font-family:var(--mono);font-size:12.5px}
+.ro{font-size:14px;margin:0;padding-left:18px} .ro li{margin-bottom:5px}
+.foot{font-size:12.5px;color:var(--muted);margin-top:12px} .foot code{font-family:var(--mono)}
+.err{background:var(--coral-bg);color:var(--coral);border:1px solid #EFC3B5;border-radius:10px;padding:12px 14px;margin-top:12px;font-size:14px}
+.hidden{display:none}
+.impact{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:2px 0 18px}
+.imp{border-radius:10px;padding:12px 14px;background:#F6F4EF}
+.imp .k{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.imp .n{font-size:26px;font-weight:700;line-height:1.2;margin-top:2px}
+.imp .s{font-size:13px;color:var(--ink-2);margin-top:2px}
+.imp.loss .n{color:var(--coral)} .imp.warn .n{color:var(--gold-ink)} .imp.save{background:var(--green-bg)} .imp.save .n{color:var(--green)}
+.econ{font-size:12px;color:var(--faint);margin-top:8px}
+.opt{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.opt button{padding:9px 14px;font-size:14px;background:#fff;color:var(--ink);border:1.5px solid var(--line-2)}
+.opt button.rec{background:var(--ink);color:#fff;border-color:var(--ink)}
+.opt button.picked{outline:3px solid var(--gold-bg);border-color:var(--gold)}
+.opt button:disabled{opacity:.5}
+.say{display:flex;gap:8px;margin-top:10px}
+.say input{flex:1;font:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--line-2);border-radius:8px}
+.say button{padding:0 14px;font-size:14px}
+.step.human{background:#FFFCF4;border:1.5px solid var(--gold);border-radius:12px;padding:12px 14px;margin:8px 0}
+.step.human .num{background:var(--gold)} .step.human .stitle{color:var(--gold-ink)}
+.line.you{background:#fff;border:1.5px solid var(--gold);color:var(--ink);font-weight:600}
+.cp{display:flex;align-items:center;gap:7px;font-size:13.5px;color:var(--ink-2);margin-top:10px;cursor:pointer;width:max-content}
+.cp input{width:16px;height:16px;accent-color:var(--ink)}
+.find .tech{font-size:11.5px;color:var(--faint);font-weight:400;margin-left:6px}
+@media (max-width:900px){.chain{flex-wrap:wrap}.cbox{flex:1 1 140px}.impact{grid-template-columns:1fr}main{padding:16px}header{padding:14px 16px;flex-wrap:wrap}.agents{grid-template-columns:repeat(3,1fr)}
+  .find{grid-template-columns:1fr;gap:4px}.find .vv{text-align:left}.details{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <svg width="56" height="28" viewBox="0 0 200 100" aria-hidden="true">
+    <defs><clipPath id="cA"><circle cx="100" cy="20" r="13"/></clipPath><clipPath id="cB"><circle cx="100" cy="80" r="13"/></clipPath></defs>
+    <rect x="12" y="18" width="110" height="64" rx="32" fill="none" stroke="#F5F3EE" stroke-width="12"/>
+    <rect x="78" y="18" width="110" height="64" rx="32" fill="none" stroke="#D9A441" stroke-width="12"/>
+    <rect x="12" y="18" width="110" height="64" rx="32" fill="none" stroke="#0F2233" stroke-width="20" clip-path="url(#cA)"/>
+    <rect x="12" y="18" width="110" height="64" rx="32" fill="none" stroke="#F5F3EE" stroke-width="12" clip-path="url(#cA)"/>
+    <rect x="78" y="18" width="110" height="64" rx="32" fill="none" stroke="#0F2233" stroke-width="20" clip-path="url(#cB)"/>
+    <rect x="78" y="18" width="110" height="64" rx="32" fill="none" stroke="#D9A441" stroke-width="12" clip-path="url(#cB)"/>
+  </svg>
+  <div>
+    <div class="name">Chain of Evidence</div>
+    <div class="tag">Chain of thought guesses. Chain of evidence proves.</div>
+  </div>
+  <div class="mode" id="mode">connecting…</div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Ask why a stockout happened</h2>
+    <form class="ask" id="askForm">
+      <input id="q" autocomplete="off" placeholder="e.g. Why did Brightwash detergent run out in Delhi?">
+      <button id="go" type="submit">Investigate</button>
+    </form>
+    <label class="cp"><input type="checkbox" id="cpOn" checked> Pause for my review before the team concludes (analyst checkpoint)</label>
+    <div class="chips" id="chips"><span class="lbl">Recorded stockouts:</span></div>
+    <div class="intake" id="intake"></div>
+  </section>
+
+  <div id="run" class="hidden">
+    <section class="card">
+      <div class="teamhead">
+        <h2>The agent team</h2>
+        <div class="stats">
+          <div class="stat"><div class="n" id="sMsg">0</div><div class="t">messages</div></div>
+          <div class="stat"><div class="n" id="sQ">0</div><div class="t">Zetaris queries</div></div>
+          <div class="stat"><div class="n" id="sV">0</div><div class="t">rechecks</div></div>
+          <div class="stat loop"><div class="n" id="sL">0</div><div class="t">loops</div></div>
+          <div class="stat rb"><div class="n" id="sR">0</div><div class="t">rollbacks</div></div>
+          <div class="stat"><div class="n" id="sT">0s</div><div class="t">elapsed</div></div>
+        </div>
+      </div>
+      <div class="agents" id="agents"></div>
+    </section>
+
+    <div id="answer"></div>
+
+    <section class="card">
+      <h2>How the agents got there</h2>
+      <div class="story" id="story"></div>
+      <div id="pendWrap"></div>
+      <button class="toggle" id="tgl" type="button">Show every message between the agents</button>
+      <div class="seqwrap hidden" id="seqwrap">
+        <div class="lanes-head" id="lanesHead"></div>
+        <div class="seq" id="seq"></div>
+      </div>
+    </section>
+
+    <section class="card hidden" id="detailsCard">
+      <h2>Evidence and receipts</h2>
+      <div class="details" id="details"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const src = s => /zetaris/i.test(s||'') ? 'Zetaris' : 'sample data';
+const thr = s => { const m = /^(below|above)\s+(.*)$/.exec(s||''); return !m ? (s||'') : (m[1]==='below' ? 'target ≥ ' : 'limit ≤ ') + m[2]; };
+const pct = v => (typeof v === 'number') ? (v*100).toFixed(1) + '%' : (v ?? 'n/a');
+const LANES = ['You','Planner','Investigator','Evaluator','Writer'];
+const ROLE = {You:'asks the question', Planner:'walks the root-cause tree', Investigator:'queries Zetaris',
+  Evaluator:'challenges every finding', Writer:'drafts the report'};
+const WORK = {Planner:'thinking with Nemotron', Evaluator:'thinking with Nemotron', Writer:'drafting with Nemotron',
+  Investigator:'querying Zetaris', You:'deciding'};
+const AREA = {supply:'Supply', demand:'Demand', inventory_norm:'Inventory policy'};
+const KIND = {recheck:'verify', recheck_result:'verify', dig_deeper:'loop', counter_test:'challenge',
+  counter_result:'challenge', cause_upheld:'challenge', judgement:'challenge', rollback:'rollback', revise:'veto', approved:'approve'};
+let es=null, t0=0, timer=null, lastAt=0, st={}, finds={}, steps=0, cur=null, findBox=null, waitingOn=null, nMsgs=0, reviews=0;
+
+/* ---------- agent strip ---------- */
+function buildAgents(){
+  $('agents').innerHTML = LANES.map(n => `<div class="agent ${n==='You'?'you':''}" id="ag-${n}">
+     <div class="nm">${n}</div><div class="rl">${ROLE[n]}</div>
+     <div class="stt"><span class="lt"></span><span class="sx">idle</span></div></div>`).join('');
+}
+function setAgent(n, working, text){
+  const el = $('ag-'+n); if (!el) return;
+  el.classList.toggle('working', !!working); el.querySelector('.sx').textContent = working ? text : 'idle';
+}
+
+/* ---------- story ---------- */
+function who(list){ return list.map(x => `<b>${x}</b>`).join(' → '); }
+function newStep(kind, title, whoList, text){
+  steps++; clearPending();
+  const el = document.createElement('div');
+  el.className = 'step ' + (kind||'');
+  el.innerHTML = `<div class="num">${steps}</div><div><div class="shead"><span class="stitle">${esc(title)}</span>
+    <span class="who">${who(whoList)}</span></div>${text?`<div class="stext">${esc(text)}</div>`:''}<div class="lines"></div></div>`;
+  $('story').appendChild(el); cur = {kind, el}; findBox = null;
+  return el;
+}
+function addLine(text, cls){
+  if (!cur) return; clearPending();
+  cur.el.querySelector('.lines').insertAdjacentHTML('beforeend', `<div class="line ${cls||''}">${esc(text)}</div>`);
+}
+function ensureFindBox(){
+  if (!findBox){ findBox = document.createElement('div'); findBox.className = 'finds'; cur.el.querySelector('.lines').appendChild(findBox); }
+  return findBox;
+}
+function depthOf(id){ let d = 0, m = finds[id] && finds[id].parent; while (m && finds[m] && d < 4){ d++; m = finds[m].parent; } return d; }
+function renderFind(id){
+  const f = finds[id]; if (!f.el) return;
+  f.el.className = 'find' + (f.state === 'rolled' ? ' rolled' : '');
+  f.el.style.paddingLeft = (12 + depthOf(id)*22) + 'px';
+  const trail = [];
+  if (f.q) trail.push({text: f.q});
+  if (f.rc === 'ordered') trail.push({text: 'Evaluator ordered an independent recheck…'});
+  if (f.rc === 'done') trail.push({text: `✓ Verified: the Evaluator recomputed it from ${f.rows||'the'} raw rows`, ok: true});
+  f.el.innerHTML = `<span class="pill p-${f.state}">${esc(f.stateText)}</span>
+    <div><div class="lb">${depthOf(id)?'↳ ':''}${esc(f.plain || f.label)}<span class="tech">${f.plain?esc(f.label):''}</span> <span class="why">${esc(f.why||'')}</span></div>
+    <div class="trail">${trail.map(t => `<span class="${t.ok?'ok':''}">${esc(t.text)}</span>`).join('')}</div></div>
+    <div class="vv">${f.value===undefined?'…':pct(f.value)}<small>${esc(thr(f.threshold))}</small></div>`;
+}
+function setFind(id, patch, trail){
+  const f = finds[id]; if (!f) return;
+  Object.assign(f, patch); if (trail) f.trail.push(trail); renderFind(id);
+}
+function pending(agent){
+  clearPending(); waitingOn = agent;
+  $('pendWrap').innerHTML = `<div class="pend" id="pend"><i></i>${esc(agent)} is ${esc(WORK[agent])}…</div>`;
+}
+function clearPending(){ $('pendWrap').innerHTML = ''; }
+
+/* ---------- analyst checkpoint ---------- */
+function showCheckpoint(p){
+  const el = newStep('human', 'The team pauses for your review', ['Evaluator','You'],
+    (p.causes && p.causes.length ? `Candidate causes so far: ${p.causes.join('; ')}. ` : '') + `Evaluator’s recommendation: ${p.recommendation}`);
+  cur.kind = 'human';
+  const opts = (p.options||[]).map(o => `<button type="button" data-c="${esc(o.id)}" class="${o.id==='recommended'?'rec':''}" title="${esc(o.detail||'')}">${esc(o.label)}</button>`).join('');
+  el.querySelector('.lines').insertAdjacentHTML('beforeend', `<div class="opt">${opts}</div>
+    <form class="say"><input placeholder="…or tell the team what to do, in your own words" maxlength="300"><button type="submit">Send</button></form>`);
+  el.querySelectorAll('.opt button').forEach(b => b.onclick = () => { b.classList.add('picked'); reply({choice: b.dataset.c}); });
+  el.querySelector('.say').onsubmit = e => { e.preventDefault(); const v = e.target.querySelector('input').value.trim(); if (v) reply({choice:'text', text:v}); };
+  setAgent('You', true, 'your turn: choose below');
+  waitingOn = 'You';
+  $('pendWrap').innerHTML = `<div class="pend" id="pend"><i></i>The team is waiting for your decision</div>`;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+}
+function reply(body){
+  document.querySelectorAll('.step.human .opt button, .step.human .say button').forEach(b => b.disabled = true);
+  clearPending(); lastAt = Date.now();
+  fetch('/api/reply?' + new URLSearchParams(body)).catch(() => {});
+}
+
+/* ---------- detailed timeline ---------- */
+function buildSeq(){
+  $('lanesHead').innerHTML = LANES.map(n => `<div>${n}</div>`).join('');
+  $('seq').innerHTML = LANES.map((n,i) => `<div class="lane" style="left:calc(12px + (100% - 24px) * ${(i+0.5)/LANES.length})"></div>`).join('');
+}
+function seqArrow(from, to, type, summary, kind){
+  const N = LANES.length, a = LANES.indexOf(from === 'System' ? 'You' : from), b = LANES.indexOf(to);
+  if (a < 0 || b < 0) return;
+  const xa = (a+.5)/N, xb = (b+.5)/N, l = Math.min(xa,xb), w = Math.abs(xb-xa), dir = xb >= xa ? 'r' : 'l';
+  $('seq').insertAdjacentHTML('beforeend', `<div class="row k-${kind||'base'}" title="${esc(summary)}">
+    <div class="cap" style="left:calc(12px + (100% - 24px) * ${(xa+xb)/2})"><b>${esc(type)}</b>${esc(summary)}</div>
+    <div class="arrow ${dir}" style="left:calc(12px + (100% - 24px) * ${l});width:calc((100% - 24px) * ${w})"></div></div>`);
+}
+
+/* ---------- message handling ---------- */
+function setStat(id, v){ $(id).textContent = v; }
+function bump(k, id){ st[k] = (st[k]||0) + 1; if (id) setStat(id, st[k]); }
+
+function onMessage(m){
+  lastAt = Date.now(); nMsgs++;
+  const p = m.payload || {}, id = p.metric_id;
+  seqArrow(m.from, m.to, m.type, m.summary, KIND[m.type]);
+  LANES.forEach(n => setAgent(n, false)); setAgent(m.to, true, 'reading'); waitingOn = m.to;
+  bump('msg','sMsg');
+
+  switch (m.type){
+  case 'case_opened':
+    newStep('', 'You asked a question', ['You','Planner'], $('q').value || m.summary); break;
+  case 'plan':
+    newStep('', 'The Planner makes a plan', ['Planner','Evaluator'], m.summary); break;
+  case 'investigate':
+    if (!cur || (cur.kind !== 'inv' && cur.kind !== 'loop'))
+      { newStep('', 'Walking the root-cause tree', ['Planner','Investigator','Evaluator'],
+          'The Planner sends checks. The Investigator queries Zetaris. The Evaluator rechecks anything off-threshold before accepting it.');
+        cur.kind = 'inv'; }
+    { const box = ensureFindBox(), par = finds[p.parent];
+      const sameBox = par && par.el && par.el.parentNode === box;
+      finds[id] = {label: p.label || m.summary, plain: p.plain, parent: p.parent, trail: [], state: 'checking', stateText: 'checking…',
+                   why: (par && !sameBox) ? `re-examines ${par.label}` : ''};
+      const el = finds[id].el = document.createElement('div');
+      if (sameBox){   // keep drill-downs directly under their parent
+        let anchor = par.el, d = depthOf(p.parent);
+        while (anchor.nextSibling && anchor.nextSibling._depth > d) anchor = anchor.nextSibling;
+        anchor.after(el);
+      } else box.appendChild(el);
+      el._depth = depthOf(id); renderFind(id); }
+    break;
+  case 'evidence':
+    bump('q','sQ');
+    { const q = `Investigator queried ${src(p.source)} (${p.ms} ms)`;
+      if (p.status === 'flagged') setFind(id, {value:p.value, threshold:p.threshold, q, state:'off', stateText:'off target'});
+      else if (p.status === 'error' || p.status === 'no_data') setFind(id, {state:'other', stateText:'no data', q:'query failed'});
+      else setFind(id, {value:p.value, threshold:p.threshold, q}); }
+    break;
+  case 'recheck': setFind(id, {rc:'ordered'}); break;
+  case 'recheck_result': { bump('q','sQ'); bump('v','sV'); const n = /from (\d+) raw rows/.exec(m.summary); setFind(id, {rows: n ? n[1] : ''}); break; }
+  case 'verdict':
+    if (p.verdict === 'confirmed') setFind(id, {state:'confirmed', stateText:'problem confirmed', rc:'done'});
+    else if (p.verdict === 'ruled_out') setFind(id, {state:'healthy', stateText:'within target'});
+    else if (p.verdict === 'provisionally_ruled_out') setFind(id, {state:'healthy', stateText:'near the limit'});
+    else setFind(id, {state:'other', stateText:'inconclusive'});
+    break;
+  case 'review_request': {
+    reviews++;
+    const c = (p.causes||[]).map(x => x.cause);
+    if (cur && (cur.kind === 'challenge' || cur.kind === 'rollback'))
+      addLine(`Planner updates the candidate causes: ${c.join('; ') || 'none'}`);
+    else newStep('', reviews > 1 ? 'The Planner asks for review again' : 'The Planner asks the Evaluator to accept the findings',
+      ['Planner','Evaluator'], c.length ? `Candidate causes: ${c.join('; ')}` : 'No cause found yet.');
+    break; }
+  case 'judgement': addLine(m.summary, 'up'); break;
+  case 'dig_deeper':
+    bump('l','sL');
+    if (p.by === 'you') newStep('loop', `Loop ${p.loop}: you sent the team to dig deeper`, ['You','Evaluator','Planner','Investigator'], p.reason || m.summary);
+    else newStep('loop', `Loop ${p.loop}: the Evaluator rejects “no cause found”`, ['Evaluator','Planner','Investigator'], p.reason || m.summary);
+    cur.kind = 'loop'; break;
+  case 'checkpoint': showCheckpoint(p); break;
+  case 'direction': addLine(`You: “${m.summary}”`, 'you'); cur.el.querySelectorAll('.opt button, .say button, .say input').forEach(b => b.disabled = true); break;
+  case 'counter_test':
+    newStep('challenge', 'The Evaluator tries to disprove a cause', ['Evaluator','Investigator'], m.summary.replace(/^Before I accept /,'Before accepting ')); cur.kind='challenge'; break;
+  case 'counter_result':
+    bump('q','sQ');
+    addLine(`Investigator ran the onset test on Zetaris: breaches were ${pct(p.early)} in weeks 12–7 and ${pct(p.late)} in weeks 6–1.`); break;
+  case 'rollback':
+    bump('r','sR'); cur.el.className = 'step rollback'; cur.el.querySelector('.stitle').textContent = 'Rollback: a confirmed cause is retracted'; cur.kind = 'rollback';
+    addLine('Rolled back: ' + (p.reason || m.summary), 'rb');
+    setFind(id, {state:'rolled', stateText:'rolled back · symptom'}); break;
+  case 'cause_upheld':
+    addLine('Cause upheld: ' + (p.reason || m.summary), 'up'); setFind(id, {state:'upheld', stateText:'survived test'}); break;
+  case 'write_report':
+    newStep('report', 'The Writer drafts, the Evaluator signs off', ['Evaluator','Writer','Evaluator'], m.summary); cur.kind='report'; break;
+  case 'impact': addLine(`Writer asks the Investigator: “${m.summary}”`); break;
+  case 'impact_result': addLine(`Investigator: ${m.summary}`); break;
+  case 'sign_off': addLine(`Writer: ${m.summary}`); break;
+  case 'revise': addLine(`Evaluator vetoed the draft: ${m.summary}`, 'veto'); break;
+  case 'approved': addLine(`Evaluator: ${m.summary}`, 'ok'); break;
+  }
+}
+
+function onDone(r){
+  clearPending(); LANES.forEach(n => setAgent(n, false));
+  for (const c of r.confirmed_causes || []) setFind(c.metric_id, {state:'cause', stateText:'root cause'});
+  const rep = r.report || {};
+  const actions = {}; (rep.causes||[]).forEach(c => actions[c.cause] = c.action);
+  const chains = (r.chains||[]).map(ch => {
+    const area = ch.steps.length ? AREA[ch.steps[0].branch] || ch.steps[0].branch : '';
+    const boxes = ch.steps.map(s => `<div class="cbox ${s.status==='flagged'?'off':'ok'}"><div class="l">${esc(s.plain || s.label)}</div>
+        <div class="v">${pct(s.value)}</div><div class="t">${esc(thr(s.threshold))}${s.status==='flagged'?' · off target':' · looked fine'}</div></div>`);
+    const all = [`<div class="cbox area"><div class="l">Area</div><div class="v">${esc(area)}</div></div>`, ...boxes,
+      `<div class="cbox cause"><div class="l">Root cause</div><div class="v">${esc(ch.cause)}</div><div class="t">owner: ${esc(ch.owner||'')}</div></div>`];
+    return `<div class="chain">${all.join('<div class="lnk">→</div>')}</div>` +
+      (actions[ch.cause] ? `<div class="act"><b>Next step:</b> ${esc(actions[ch.cause])}</div>` : '');
+  }).join('') || '<p>No root cause could be confirmed from the available data.</p>';
+  const money = v => '₹' + Math.round(v).toLocaleString('en-IN');
+  const dd = s => new Date(s+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  const im = r.impact || {};
+  let tiles = '';
+  if (im.lost_units !== undefined){
+    tiles += `<div class="imp loss"><div class="k">What it cost (${im.window_days} days)</div>
+      <div class="n">${im.lost_value!=null?money(im.lost_value):im.lost_units.toLocaleString()+' units'}</div>
+      <div class="s">${im.lost_units.toLocaleString()} units of demand lost; out of stock on ${(im.stockout_dates||[]).length} day${(im.stockout_dates||[]).length===1?'':'s'}
+      (${(im.stockout_dates||[]).map(dd).join(', ')})${(im.stockout_dates||[]).length>1?': the cause is still active':''}</div></div>`;
+    const ws = im.warnings || [], on = ws.filter(w => !w.chronic), ch = ws.filter(w => w.chronic);
+    if (on.length){ const w = on.reduce((a,b) => a.days_before > b.days_before ? a : b);
+      tiles += `<div class="imp warn"><div class="k">Early warning</div><div class="n">${w.days_before} days</div>
+        <div class="s">${esc(w.cause)} was visible from ${dd(w.since)}, ${w.days_before} days before the stockout</div></div>`; }
+    else if (ch.length){ const w = ch[0];
+      tiles += `<div class="imp warn"><div class="k">Early warning</div><div class="n">${w.weeks_off} of 12 weeks</div>
+        <div class="s">${esc(w.cause)} was off target in ${w.weeks_off} of the 12 weeks before: a chronic problem</div></div>`; }
+    if (im.avoided){ const a = im.avoided;
+      tiles += `<div class="imp save"><div class="k">Wrong fix avoided</div><div class="n">${money(a.value)}</div>
+        <div class="s">Raising safety stock by ~${a.units.toLocaleString()} units ${esc(a.reason)}. That ties up this much stock, ~${money(a.carrying_per_year)} a year to carry.</div></div>`; }
+    else tiles += `<div class="imp"><div class="k">Owner</div><div class="n" style="font-size:20px">${esc((r.chains||[]).map(c => c.owner).filter(Boolean).join(' · ') || '–')}</div>
+        <div class="s">Each cause is routed to the team that can fix it, with a concrete next step</div></div>`;
+  }
+  const econ = im.lost_units !== undefined ? `<div class="econ">Money is an estimate: lost units × ${im.net_price!=null?money(im.net_price):''} net price per unit for ${esc(im.sku_desc||'')} (MRP less GST and trade margins); stock valued at estimated cost. Prices come from the finance system through Zetaris (<code>scm_finance.sku_economics</code>).</div>` : '';
+  const rbs = (r.rollbacks||[]).map(x => `<div class="rbnote"><b>Rolled back during review:</b> ${esc(x.cause)}: ${esc(x.reason)}</div>`).join('');
+  $('answer').innerHTML = `<div class="answer"><div class="top">
+      <div class="k">The answer · ${esc(r.case.product_name)} at ${esc(r.case.dc_name)} · ${esc(r.case.case_id)} · ${r.status==='approved'?'signed off by the Evaluator':'evidence-only template'}</div>
+      <div class="h">${esc(rep.headline)}</div></div>
+      <div class="inner"><div class="impact">${tiles}</div><h2>Chain of evidence</h2>${chains}${rbs}${econ}</div></div>`;
+  const ro = (rep.ruled_out||[]).map(x => `<li><b>${esc(x.driver)}</b>: ${esc(x.why)}</li>`).join('');
+  const rc = (r.receipts||[]).map(x => `<tr><td>${esc(x.agent)}</td><td class="m">${esc(x.model)}${x.fallback?' (fallback)':''}</td>
+    <td class="m">${esc(x.receipt_id||'–')}</td><td>${(x.latency_ms/1000).toFixed(1)}s</td><td>${x.tokens||'–'}</td></tr>`).join('');
+  $('details').innerHTML = `<div><h2>Ruled out, with evidence</h2><ul class="ro">${ro}</ul>
+      <p class="foot">${esc(rep.narrative)}</p></div>
+    <div><h2>Model calls · Meterless receipts</h2><table><thead><tr><th>Agent</th><th>Model</th><th>Receipt</th><th>Time</th><th>Tokens</th></tr></thead><tbody>${rc}</tbody></table>
+      <p class="foot">${r.messages} agent messages · ${r.loops} loop(s) · ${(r.rollbacks||[]).length} rollback(s) · ${r.report_revisions} revision(s) · ${r.elapsed_s}s<br>
+      Every message: <code>logs/${esc(r.run_id)}/trace.jsonl</code> · every fact with its SQL: <code>world_model.jsonl</code></p></div>`;
+  $('detailsCard').classList.remove('hidden');
+  $('tgl').textContent = `Show all ${nMsgs} messages between the agents`;
+  $('answer').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function reset(){
+  st = {}; finds = {}; steps = 0; cur = null; findBox = null; waitingOn = null; nMsgs = 0; reviews = 0;
+  ['sMsg','sQ','sV','sL','sR'].forEach(i => setStat(i, 0)); setStat('sT','0s');
+  $('story').innerHTML = ''; $('answer').innerHTML = ''; $('details').innerHTML = '';
+  $('detailsCard').classList.add('hidden'); buildAgents(); buildSeq(); clearPending();
+}
+function busy(on){
+  $('go').disabled = on; document.querySelectorAll('.chip').forEach(b => b.disabled = on);
+  clearInterval(timer);
+  if (on) timer = setInterval(() => {
+    setStat('sT', Math.round((Date.now()-t0)/1000)+'s');
+    if (waitingOn && waitingOn !== 'You' && waitingOn !== 'System' && Date.now() - lastAt > 1500 && !$('pend')){ setAgent(waitingOn, true, WORK[waitingOn]); pending(waitingOn); }
+  }, 400);
+}
+function start(params){
+  if (es) es.close();
+  reset(); $('run').classList.remove('hidden'); $('intake').textContent = 'Routing your question…';
+  document.querySelectorAll('.err').forEach(e => e.remove());
+  t0 = Date.now(); lastAt = Date.now(); busy(true); setAgent('You', true, 'asking');
+  if ($('cpOn').checked) params.checkpoint = '1';
+  es = new EventSource('/api/run?' + new URLSearchParams(params));
+  es.onmessage = ev => {
+    const d = JSON.parse(ev.data);
+    if (d.type === 'intake'){
+      $('intake').innerHTML = d.event ? `Investigating <b>${esc(d.event.event_id)}</b>: <b>${esc(d.event.product_name)}</b> (SKU ${esc(d.event.sku_id)}, ${esc(d.event.category||'')}) at ${esc(d.event.dc_name)}, out of stock on ${esc(d.event.oos_date)}, ${esc(d.event.lost_demand_qty)} units of demand lost that day${d.event.lost_value_inr!=null?` (₹${Math.round(d.event.lost_value_inr).toLocaleString('en-IN')})`:''} <span style="color:var(--muted)">(${esc(d.how)})</span>` : '';
+    } else if (d.type === 'case'){ t0 = Date.now(); }
+    else if (d.type === 'message') onMessage(d.msg);
+    else if (d.type === 'done'){ es.close(); busy(false); onDone(d); }
+    else if (d.type === 'error'){ es.close(); busy(false); clearPending();
+      $('intake').insertAdjacentHTML('afterend', `<div class="err">${esc(d.message)}</div>`); }
+  };
+  es.onerror = () => { if (es.readyState !== 2){ es.close(); busy(false); clearPending();
+      $('intake').insertAdjacentHTML('afterend', '<div class="err">Lost connection to the local server. Is <code>python3 -m agent.server</code> still running?</div>'); } };
+}
+
+$('tgl').onclick = () => { const h = $('seqwrap').classList.toggle('hidden');
+  $('tgl').textContent = (h ? 'Show' : 'Hide') + ` all ${nMsgs || ''} messages between the agents`.replace('  ',' '); };
+$('askForm').addEventListener('submit', e => { e.preventDefault(); const q = $('q').value.trim(); if (q) start({q}); else $('q').focus(); });
+fetch('/api/info').then(r => r.json()).then(info => {
+  $('mode').innerHTML = info.sample_mode ? '<b>Sample mode</b> · offline data and reasoner'
+    : `<b>Live</b> · Zetaris + ${esc(info.model.split('/').pop())} via Meterless`;
+  for (const e of info.events){
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip';
+    b.innerHTML = `${esc(e.product_name)} <span>· ${esc(e.dc_name)} · ${new Date(e.oos_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${e.lost_value_inr!=null?` · <b style="color:var(--coral);font-weight:600">₹${Math.round(e.lost_value_inr).toLocaleString('en-IN')} lost</b>`:''}</span>`;
+    b.title = `${e.event_id} · SKU ${e.sku_id}`;
+    b.onclick = () => { $('q').value = `Why did ${e.product_name} stock out at ${e.dc_name} on ${new Date(e.oos_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long'})}?`; start({event: e.event_id}); };
+    $('chips').appendChild(b);
+  }
+}).catch(() => { $('mode').textContent = 'server not reachable'; });
+buildAgents(); buildSeq();
+</script>
+</body>
+</html>
