@@ -398,7 +398,7 @@ function onMessage(m){
     newStep('challenge', 'The Evaluator tries to disprove a cause', ['Evaluator','Investigator'], m.summary.replace(/^Before I accept /,'Before accepting ')); cur.kind='challenge'; break;
   case 'counter_result':
     bump('q','sQ');
-    addLine(`Investigator ran the onset test on Zetaris: breaches were ${pct(p.early)} in weeks 12–7 and ${pct(p.late)} in weeks 6–1.`); break;
+    addLine(`Investigator ran the onset test on Zetaris: stock was below safety stock on ${pct(p.early)} of days in the first 6 of the 12 weeks, and ${pct(p.late)} in the last 6.`); break;
   case 'rollback':
     bump('r','sR'); cur.el.className = 'step rollback'; cur.el.querySelector('.stitle').textContent = 'Rollback: a confirmed cause is retracted'; cur.kind = 'rollback';
     addLine('Rolled back: ' + (p.reason || m.summary), 'rb');

@@ -601,8 +601,9 @@ class Evaluator(Agent):
             return
         recent_onset = early < thr and late >= 2 * max(early, 0.01)
         if recent_onset:
-            reason = (f"breaches were {early:.1%} in weeks 12-7 but {late:.1%} in weeks 6-1: "
-                      f"they began only after '{others[0]}' started draining stock, so this "
+            reason = (f"stock was below safety stock on {early:.1%} of days in the first 6 of the 12 weeks, "
+                      f"but on {late:.1%} in the last 6: "
+                      f"the shortfalls began only after '{others[0]}' started draining stock, so this "
                       f"is a symptom, not a root cause")
             self.judgements.append({"counter_test": m, "outcome": "rolled_back",
                                     "early": early, "late": late, "reason": reason})
@@ -613,7 +614,8 @@ class Evaluator(Agent):
                       metric_id=m, symptom_of=others[0], reason=reason,
                       early=early, late=late, fact_id=p.get("fact_id"))
         else:
-            reason = (f"breaches were already {early:.1%} in weeks 12-7 (then {late:.1%}): "
+            reason = (f"stock was already below safety stock on {early:.1%} of days in the first 6 of the "
+                      f"12 weeks (then {late:.1%} in the last 6): "
                       "a chronic problem that predates the other cause, so it stands")
             self.judgements.append({"counter_test": m, "outcome": "upheld",
                                     "early": early, "late": late, "reason": reason})

@@ -293,7 +293,7 @@ VERIFY = {
 _HALF = "date_sub(DATE '{d}', 42)"
 COUNTER_TESTS = {
     "safety_stock_breach_pct": {
-        "label": "Breach onset test (weeks 12-7 vs weeks 6-1)",
+        "label": "Breach onset test (first 6 vs last 6 of the 12 weeks)",
         "question": "were safety-stock breaches chronic, or did they only begin "
                     "once another disruption was draining stock?",
         "sql": f"""
