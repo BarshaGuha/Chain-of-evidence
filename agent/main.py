@@ -201,6 +201,8 @@ def main(argv=None):
     g.add_argument("--all", action="store_true")
     args = ap.parse_args(argv)
 
+    if config.AUTO_SAMPLE:
+        print("(No .env keys found: running in SAMPLE MODE with the bundled data.)")
     data = get_client()
     events = list_events(data)
     if args.list:

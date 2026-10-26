@@ -1,0 +1,293 @@
+{
+  "case": {
+    "case_id": "OOS-002",
+    "sku_id": "200118",
+    "product_name": "Brightwash Liquid Detergent 1L",
+    "dc_id": "DC2",
+    "dc_name": "Delhi DC",
+    "oos_date": "2026-08-20",
+    "lost_demand_qty": 181
+  },
+  "run_id": "OOS-002_20261026_145514",
+  "status": "approved",
+  "report": {
+    "headline": "Recent demand surge not reflected in the forecast caused the Brightwash Liquid Detergent 1L stockout at Delhi DC on 20 Aug",
+    "narrative": "Recent demand surge not reflected in the forecast caused the Brightwash Liquid Detergent 1L stockout at Delhi DC on 20 Aug. The stockout repeated on 5 more day(s) in the following 28 days, so the cause is still active.",
+    "causes": [
+      {
+        "cause": "Recent demand surge not reflected in the forecast",
+        "evidence": "Under-Forecast Error % (last 4 weeks) = 17.7% (threshold above 10%)",
+        "action": "Re-baseline the Brightwash Liquid Detergent 1L forecast at Delhi DC: demand has run 18% above forecast over the last 4 weeks (visible from 6 Aug). Add the surge to the next planning cycle."
+      }
+    ],
+    "ruled_out": [
+      {
+        "driver": "Qty Fill On-Time %",
+        "why": "99.4% vs threshold below 95%: within normal range"
+      },
+      {
+        "driver": "Under-Forecast Error %",
+        "why": "6.4% vs threshold above 10%: within normal range"
+      },
+      {
+        "driver": "Safety Stock Breach Occurrences %",
+        "why": "9.5% vs threshold above 20%: within normal range"
+      },
+      {
+        "driver": "Order Qty Deviation %",
+        "why": "7.4% vs threshold above 15%: within normal range"
+      }
+    ]
+  },
+  "confirmed_causes": [
+    {
+      "metric_id": "under_forecast_error_recent_pct",
+      "cause": "Recent demand surge not reflected in the forecast",
+      "owner": "Demand planning"
+    }
+  ],
+  "rollbacks": [],
+  "chains": [
+    {
+      "cause": "Recent demand surge not reflected in the forecast",
+      "owner": "Demand planning",
+      "steps": [
+        {
+          "metric_id": "under_forecast_error_pct",
+          "label": "Under-Forecast Error %",
+          "branch": "demand",
+          "plain": "Demand above forecast, last 12 weeks",
+          "value": 0.06373920146538281,
+          "threshold": "above 10%",
+          "status": "clear"
+        },
+        {
+          "metric_id": "under_forecast_error_recent_pct",
+          "label": "Under-Forecast Error % (last 4 weeks)",
+          "branch": "demand",
+          "plain": "Demand above forecast, last 4 weeks",
+          "value": 0.17718462442080532,
+          "threshold": "above 10%",
+          "status": "flagged"
+        }
+      ]
+    }
+  ],
+  "impact": {
+    "window_days": 28,
+    "warnings": [
+      {
+        "metric_id": "under_forecast_error_recent_pct",
+        "cause": "Recent demand surge not reflected in the forecast",
+        "since": "2026-08-06",
+        "days_before": 14,
+        "weeks_off": 2,
+        "chronic": false
+      }
+    ],
+    "avoided": null,
+    "currency": "\u20b9",
+    "lost_units": 3153,
+    "stockout_dates": [
+      "2026-08-20",
+      "2026-08-21",
+      "2026-08-22",
+      "2026-09-03",
+      "2026-09-04",
+      "2026-09-11"
+    ],
+    "sku_desc": "Brightwash Liquid Detergent 1L",
+    "dc_name": "Delhi DC",
+    "net_price": 150.0,
+    "lost_value": 472950
+  },
+  "loops": 1,
+  "report_revisions": 0,
+  "checkpoint": false,
+  "evaluator_judgements": [
+    {
+      "loop": 1,
+      "dig_deeper": [
+        "under_forecast_error_recent_pct"
+      ],
+      "reason": "Supply was healthy and the 12-week forecast error is small, so look for a recent demand change hidden in the long average.",
+      "reasoner": "offline-reasoner"
+    }
+  ],
+  "evidence": [
+    {
+      "fact_id": "F-fill_on_time_pct-primary-36afeee84f16",
+      "label": "Qty Fill On-Time %",
+      "branch": "supply",
+      "purpose": "primary",
+      "value": 0.9944294841332699,
+      "threshold": "below 95%",
+      "status": "clear",
+      "support": {
+        "orders_in_window": 12,
+        "ordered_qty": 37878
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "SELECT 1.0 * SUM(CASE WHEN delivery_date <= required_delivery_date\n                      THEN COALESCE(accepted_qty, 0) ELSE 0 END)\n       / NULLIF(SUM(ordered_qty), 0) AS value,\n       COUNT(*) AS orders_in_window, SUM(ordered_qty) AS ordered_qty\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '200118' AND dc_id = 'DC2'\n  AND required_delivery_date BETWEEN date_sub(DATE '2026-08-20', 84) AND date_sub(DATE '2026-08-20', 1)",
+        "ms": 0,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    },
+    {
+      "fact_id": "F-under_forecast_error_pct-primary-4ca5127fa788",
+      "label": "Under-Forecast Error %",
+      "branch": "demand",
+      "purpose": "primary",
+      "value": 0.06373920146538281,
+      "threshold": "above 10%",
+      "status": "clear",
+      "support": {
+        "actual_demand_qty": 40399,
+        "forecast_qty": 37824
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "SELECT 1.0 * (SUM(actual_demand_qty) - SUM(forecast_qty))\n       / NULLIF(SUM(actual_demand_qty), 0) AS value,\n       SUM(actual_demand_qty) AS actual_demand_qty, SUM(forecast_qty) AS forecast_qty\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '200118' AND dc_id = 'DC2' AND demand_date BETWEEN date_sub(DATE '2026-08-20', 84) AND date_sub(DATE '2026-08-20', 1)",
+        "ms": 0,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    },
+    {
+      "fact_id": "F-safety_stock_breach_pct-primary-1d4b27548f1b",
+      "label": "Safety Stock Breach Occurrences %",
+      "branch": "inventory_norm",
+      "purpose": "primary",
+      "value": 0.09523809523809523,
+      "threshold": "above 20%",
+      "status": "clear",
+      "support": {
+        "breach_days": 8,
+        "days_observed": 84,
+        "safety_stock_days": 5
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "SELECT 1.0 * SUM(CASE WHEN s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END)\n       / NULLIF(COUNT(*), 0) AS value,\n       SUM(CASE WHEN s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END) AS breach_days,\n       COUNT(*) AS days_observed, MAX(n.safety_stock_days) AS safety_stock_days\nFROM scm_wms.inventory_snapshots s\nJOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\nWHERE s.sku_id = '200118' AND s.dc_id = 'DC2' AND s.snapshot_date BETWEEN date_sub(DATE '2026-08-20', 84) AND date_sub(DATE '2026-08-20', 1)",
+        "ms": 0,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    },
+    {
+      "fact_id": "F-order_qty_deviation_pct-primary-1ed6b69203b1",
+      "label": "Order Qty Deviation %",
+      "branch": "supply",
+      "purpose": "primary",
+      "value": 0.07407316870456282,
+      "threshold": "above 15%",
+      "status": "clear",
+      "support": {
+        "actual_ordered_qty": 37878,
+        "theoretical_order_qty": 40908.2
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "WITH actual AS (\n  SELECT COALESCE(SUM(ordered_qty), 0) AS qty\n  FROM scm_orders.replenishment_orders\n  WHERE sku_id = '200118' AND dc_id = 'DC2' AND required_delivery_date BETWEEN date_sub(DATE '2026-08-20', 84) AND date_sub(DATE '2026-08-20', 1)),\ninv_d1 AS (\n  SELECT on_hand_qty FROM scm_wms.inventory_snapshots\n  WHERE sku_id = '200118' AND dc_id = 'DC2'\n    AND snapshot_date = date_sub(DATE '2026-08-20', 84 + 1)),\ndesign_d AS (\n  SELECT s.fwd_avg_daily_forecast * n.inventory_norm_days AS qty\n  FROM scm_wms.inventory_snapshots s\n  JOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\n  WHERE s.sku_id = '200118' AND s.dc_id = 'DC2'\n    AND s.snapshot_date = date_sub(DATE '2026-08-20', 1)),\nfc AS (\n  SELECT SUM(forecast_qty) AS qty FROM scm_planning_01.demand_daily\n  WHERE sku_id = '200118' AND dc_id = 'DC2' AND demand_date BETWEEN date_sub(DATE '2026-08-20', 84) AND date_sub(DATE '2026-08-20', 1))\nSELECT 1 - 1.0 * a.qty / NULLIF(GREATEST(0, dd.qty - i.on_hand_qty + f.qty), 0) AS value,\n       a.qty AS actual_ordered_qty,\n       GREATEST(0, dd.qty - i.on_hand_qty + f.qty) AS theoretical_order_qty\nFROM actual a CROSS JOIN inv_d1 i CROSS JOIN design_d dd CROSS JOIN fc f",
+        "ms": 1,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    },
+    {
+      "fact_id": "F-under_forecast_error_recent_pct-drill_down-48975d0fd179",
+      "label": "Under-Forecast Error % (last 4 weeks)",
+      "branch": "demand",
+      "purpose": "drill_down",
+      "value": 0.17718462442080532,
+      "threshold": "above 10%",
+      "status": "flagged",
+      "support": {
+        "actual_demand_qty": 15323,
+        "forecast_qty": 12608
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "SELECT 1.0 * (SUM(actual_demand_qty) - SUM(forecast_qty))\n       / NULLIF(SUM(actual_demand_qty), 0) AS value,\n       SUM(actual_demand_qty) AS actual_demand_qty, SUM(forecast_qty) AS forecast_qty\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '200118' AND dc_id = 'DC2'\n  AND demand_date BETWEEN date_sub(DATE '2026-08-20', 28) AND date_sub(DATE '2026-08-20', 1)",
+        "ms": 0,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    },
+    {
+      "fact_id": "F-under_forecast_error_recent_pct-verification-5d9d53989877",
+      "label": "Under-Forecast Error % (last 4 weeks) (independent recheck)",
+      "branch": "demand",
+      "purpose": "verification",
+      "value": 0.17718462442080532,
+      "threshold": "-",
+      "status": "verification",
+      "support": {
+        "rows_checked": 28,
+        "compared_field": "value"
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "SELECT demand_date, forecast_qty, actual_demand_qty\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '200118' AND dc_id = 'DC2'\n  AND demand_date BETWEEN date_sub(DATE '2026-08-20', 28) AND date_sub(DATE '2026-08-20', 1)\nORDER BY demand_date",
+        "ms": 0,
+        "attempts": 1,
+        "rows_returned": 28
+      }
+    },
+    {
+      "fact_id": "F-business_impact-impact-6c5e196acb4d",
+      "label": "Business impact",
+      "branch": "impact",
+      "purpose": "impact",
+      "value": 3153,
+      "threshold": "-",
+      "status": "impact",
+      "support": {
+        "lost_value": 472950,
+        "stockout_days": 6
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "SELECT SUM(actual_demand_qty - fulfilled_qty) AS lost_units,\n       SUM(CASE WHEN actual_demand_qty > fulfilled_qty THEN 1 ELSE 0 END) AS short_days\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '200118' AND dc_id = 'DC2' AND demand_date BETWEEN DATE '2026-08-20' AND date_sub(DATE '2026-08-20', -27)",
+        "ms": 0,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    }
+  ],
+  "messages": 27,
+  "model_calls": 3,
+  "receipts": [
+    {
+      "agent": "Planner",
+      "model": "offline-reasoner",
+      "receipt_id": "",
+      "latency_ms": 0,
+      "tokens": 0,
+      "fallback": true
+    },
+    {
+      "agent": "Evaluator",
+      "model": "offline-reasoner",
+      "receipt_id": "",
+      "latency_ms": 0,
+      "tokens": 0,
+      "fallback": true
+    },
+    {
+      "agent": "Writer",
+      "model": "offline-reasoner",
+      "receipt_id": "",
+      "latency_ms": 0,
+      "tokens": 0,
+      "fallback": true
+    }
+  ],
+  "models_used": [
+    "offline-reasoner"
+  ],
+  "elapsed_s": 0.0,
+  "sample_mode": true
+}

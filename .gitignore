@@ -3,5 +3,3 @@ __pycache__/
 *.pyc
 logs/
 .venv/
-outputs/
-.DS_Store

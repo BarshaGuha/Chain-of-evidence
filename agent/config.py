@@ -40,6 +40,13 @@ ZETARIS_ORG_ID = os.environ.get("ZETARIS_ORG_ID", "1")
 ZETARIS_API_KEY = os.environ.get("ZETARIS_API_KEY", "")
 ZETARIS_TIMEOUT_S = int(os.environ.get("ZETARIS_TIMEOUT_S", "90"))
 
+# A fresh clone with no .env and no keys still runs: fall back to the bundled
+# sample data and the offline reasoner, and say so.
+AUTO_SAMPLE = (not SAMPLE_MODE and "SAMPLE_MODE" not in os.environ
+               and not METERLESS_RUNTIME_TOKEN and not ZETARIS_API_KEY)
+if AUTO_SAMPLE:
+    SAMPLE_MODE = True
+
 # How each source system is addressed in Zetaris SQL: <source>.<table>.
 # Four separate Postgres databases, each registered in Zetaris as its own
 # source, so every investigation is a federated query across systems.

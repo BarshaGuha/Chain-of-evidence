@@ -1,0 +1,292 @@
+{
+  "case": {
+    "case_id": "OOS-005",
+    "sku_id": "300518",
+    "product_name": "Zippy Masala Noodles 4-pack",
+    "dc_id": "DC1",
+    "dc_name": "Mumbai DC",
+    "oos_date": "2026-08-27",
+    "lost_demand_qty": 463
+  },
+  "run_id": "OOS-005_20261026_145514",
+  "status": "approved",
+  "report": {
+    "headline": "Recent demand surge not reflected in the forecast caused the Zippy Masala Noodles 4-pack stockout at Mumbai DC on 27 Aug",
+    "narrative": "Recent demand surge not reflected in the forecast caused the Zippy Masala Noodles 4-pack stockout at Mumbai DC on 27 Aug. The stockout repeated on 4 more day(s) in the following 28 days, so the cause is still active.",
+    "causes": [
+      {
+        "cause": "Recent demand surge not reflected in the forecast",
+        "evidence": "Under-Forecast Error % (last 4 weeks) = 16.5% (threshold above 10%)",
+        "action": "Re-baseline the Zippy Masala Noodles 4-pack forecast at Mumbai DC: demand has run 17% above forecast over the last 4 weeks (visible from 13 Aug). Add the surge to the next planning cycle."
+      }
+    ],
+    "ruled_out": [
+      {
+        "driver": "Qty Fill On-Time %",
+        "why": "99.3% vs threshold below 95%: within normal range"
+      },
+      {
+        "driver": "Under-Forecast Error %",
+        "why": "6.7% vs threshold above 10%: within normal range"
+      },
+      {
+        "driver": "Safety Stock Breach Occurrences %",
+        "why": "11.9% vs threshold above 20%: within normal range"
+      },
+      {
+        "driver": "Order Qty Deviation %",
+        "why": "7.0% vs threshold above 15%: within normal range"
+      }
+    ]
+  },
+  "confirmed_causes": [
+    {
+      "metric_id": "under_forecast_error_recent_pct",
+      "cause": "Recent demand surge not reflected in the forecast",
+      "owner": "Demand planning"
+    }
+  ],
+  "rollbacks": [],
+  "chains": [
+    {
+      "cause": "Recent demand surge not reflected in the forecast",
+      "owner": "Demand planning",
+      "steps": [
+        {
+          "metric_id": "under_forecast_error_pct",
+          "label": "Under-Forecast Error %",
+          "branch": "demand",
+          "plain": "Demand above forecast, last 12 weeks",
+          "value": 0.06705807551304771,
+          "threshold": "above 10%",
+          "status": "clear"
+        },
+        {
+          "metric_id": "under_forecast_error_recent_pct",
+          "label": "Under-Forecast Error % (last 4 weeks)",
+          "branch": "demand",
+          "plain": "Demand above forecast, last 4 weeks",
+          "value": 0.16510496113895548,
+          "threshold": "above 10%",
+          "status": "flagged"
+        }
+      ]
+    }
+  ],
+  "impact": {
+    "window_days": 28,
+    "warnings": [
+      {
+        "metric_id": "under_forecast_error_recent_pct",
+        "cause": "Recent demand surge not reflected in the forecast",
+        "since": "2026-08-13",
+        "days_before": 14,
+        "weeks_off": 2,
+        "chronic": false
+      }
+    ],
+    "avoided": null,
+    "currency": "\u20b9",
+    "lost_units": 4705,
+    "stockout_dates": [
+      "2026-08-27",
+      "2026-08-28",
+      "2026-08-29",
+      "2026-09-10",
+      "2026-09-11"
+    ],
+    "sku_desc": "Zippy Masala Noodles 4-pack",
+    "dc_name": "Mumbai DC",
+    "net_price": 39.0,
+    "lost_value": 183495
+  },
+  "loops": 1,
+  "report_revisions": 0,
+  "checkpoint": false,
+  "evaluator_judgements": [
+    {
+      "loop": 1,
+      "dig_deeper": [
+        "under_forecast_error_recent_pct"
+      ],
+      "reason": "Supply was healthy and the 12-week forecast error is small, so look for a recent demand change hidden in the long average.",
+      "reasoner": "offline-reasoner"
+    }
+  ],
+  "evidence": [
+    {
+      "fact_id": "F-fill_on_time_pct-primary-c3d616cda419",
+      "label": "Qty Fill On-Time %",
+      "branch": "supply",
+      "purpose": "primary",
+      "value": 0.9928111557005515,
+      "threshold": "below 95%",
+      "status": "clear",
+      "support": {
+        "orders_in_window": 12,
+        "ordered_qty": 69274
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "SELECT 1.0 * SUM(CASE WHEN delivery_date <= required_delivery_date\n                      THEN COALESCE(accepted_qty, 0) ELSE 0 END)\n       / NULLIF(SUM(ordered_qty), 0) AS value,\n       COUNT(*) AS orders_in_window, SUM(ordered_qty) AS ordered_qty\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '300518' AND dc_id = 'DC1'\n  AND required_delivery_date BETWEEN date_sub(DATE '2026-08-27', 84) AND date_sub(DATE '2026-08-27', 1)",
+        "ms": 0,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    },
+    {
+      "fact_id": "F-under_forecast_error_pct-primary-eab0634c91a8",
+      "label": "Under-Forecast Error %",
+      "branch": "demand",
+      "purpose": "primary",
+      "value": 0.06705807551304771,
+      "threshold": "above 10%",
+      "status": "clear",
+      "support": {
+        "actual_demand_qty": 73921,
+        "forecast_qty": 68964
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "SELECT 1.0 * (SUM(actual_demand_qty) - SUM(forecast_qty))\n       / NULLIF(SUM(actual_demand_qty), 0) AS value,\n       SUM(actual_demand_qty) AS actual_demand_qty, SUM(forecast_qty) AS forecast_qty\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '300518' AND dc_id = 'DC1' AND demand_date BETWEEN date_sub(DATE '2026-08-27', 84) AND date_sub(DATE '2026-08-27', 1)",
+        "ms": 0,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    },
+    {
+      "fact_id": "F-safety_stock_breach_pct-primary-3387747d9183",
+      "label": "Safety Stock Breach Occurrences %",
+      "branch": "inventory_norm",
+      "purpose": "primary",
+      "value": 0.11904761904761904,
+      "threshold": "above 20%",
+      "status": "clear",
+      "support": {
+        "breach_days": 10,
+        "days_observed": 84,
+        "safety_stock_days": 5
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "SELECT 1.0 * SUM(CASE WHEN s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END)\n       / NULLIF(COUNT(*), 0) AS value,\n       SUM(CASE WHEN s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END) AS breach_days,\n       COUNT(*) AS days_observed, MAX(n.safety_stock_days) AS safety_stock_days\nFROM scm_wms.inventory_snapshots s\nJOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\nWHERE s.sku_id = '300518' AND s.dc_id = 'DC1' AND s.snapshot_date BETWEEN date_sub(DATE '2026-08-27', 84) AND date_sub(DATE '2026-08-27', 1)",
+        "ms": 0,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    },
+    {
+      "fact_id": "F-order_qty_deviation_pct-primary-d0e6c11032c6",
+      "label": "Order Qty Deviation %",
+      "branch": "supply",
+      "purpose": "primary",
+      "value": 0.0704845223878594,
+      "threshold": "above 15%",
+      "status": "clear",
+      "support": {
+        "actual_ordered_qty": 69274,
+        "theoretical_order_qty": 74527.0
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "WITH actual AS (\n  SELECT COALESCE(SUM(ordered_qty), 0) AS qty\n  FROM scm_orders.replenishment_orders\n  WHERE sku_id = '300518' AND dc_id = 'DC1' AND required_delivery_date BETWEEN date_sub(DATE '2026-08-27', 84) AND date_sub(DATE '2026-08-27', 1)),\ninv_d1 AS (\n  SELECT on_hand_qty FROM scm_wms.inventory_snapshots\n  WHERE sku_id = '300518' AND dc_id = 'DC1'\n    AND snapshot_date = date_sub(DATE '2026-08-27', 84 + 1)),\ndesign_d AS (\n  SELECT s.fwd_avg_daily_forecast * n.inventory_norm_days AS qty\n  FROM scm_wms.inventory_snapshots s\n  JOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\n  WHERE s.sku_id = '300518' AND s.dc_id = 'DC1'\n    AND s.snapshot_date = date_sub(DATE '2026-08-27', 1)),\nfc AS (\n  SELECT SUM(forecast_qty) AS qty FROM scm_planning_01.demand_daily\n  WHERE sku_id = '300518' AND dc_id = 'DC1' AND demand_date BETWEEN date_sub(DATE '2026-08-27', 84) AND date_sub(DATE '2026-08-27', 1))\nSELECT 1 - 1.0 * a.qty / NULLIF(GREATEST(0, dd.qty - i.on_hand_qty + f.qty), 0) AS value,\n       a.qty AS actual_ordered_qty,\n       GREATEST(0, dd.qty - i.on_hand_qty + f.qty) AS theoretical_order_qty\nFROM actual a CROSS JOIN inv_d1 i CROSS JOIN design_d dd CROSS JOIN fc f",
+        "ms": 1,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    },
+    {
+      "fact_id": "F-under_forecast_error_recent_pct-drill_down-5092a5990bb1",
+      "label": "Under-Forecast Error % (last 4 weeks)",
+      "branch": "demand",
+      "purpose": "drill_down",
+      "value": 0.16510496113895548,
+      "threshold": "above 10%",
+      "status": "flagged",
+      "support": {
+        "actual_demand_qty": 27534,
+        "forecast_qty": 22988
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "SELECT 1.0 * (SUM(actual_demand_qty) - SUM(forecast_qty))\n       / NULLIF(SUM(actual_demand_qty), 0) AS value,\n       SUM(actual_demand_qty) AS actual_demand_qty, SUM(forecast_qty) AS forecast_qty\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '300518' AND dc_id = 'DC1'\n  AND demand_date BETWEEN date_sub(DATE '2026-08-27', 28) AND date_sub(DATE '2026-08-27', 1)",
+        "ms": 0,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    },
+    {
+      "fact_id": "F-under_forecast_error_recent_pct-verification-1a3146b298cd",
+      "label": "Under-Forecast Error % (last 4 weeks) (independent recheck)",
+      "branch": "demand",
+      "purpose": "verification",
+      "value": 0.16510496113895548,
+      "threshold": "-",
+      "status": "verification",
+      "support": {
+        "rows_checked": 28,
+        "compared_field": "value"
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "SELECT demand_date, forecast_qty, actual_demand_qty\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '300518' AND dc_id = 'DC1'\n  AND demand_date BETWEEN date_sub(DATE '2026-08-27', 28) AND date_sub(DATE '2026-08-27', 1)\nORDER BY demand_date",
+        "ms": 0,
+        "attempts": 1,
+        "rows_returned": 28
+      }
+    },
+    {
+      "fact_id": "F-business_impact-impact-bf4ea43fa014",
+      "label": "Business impact",
+      "branch": "impact",
+      "purpose": "impact",
+      "value": 4705,
+      "threshold": "-",
+      "status": "impact",
+      "support": {
+        "lost_value": 183495,
+        "stockout_days": 5
+      },
+      "provenance": {
+        "source": "sample-sqlite",
+        "sql": "SELECT SUM(actual_demand_qty - fulfilled_qty) AS lost_units,\n       SUM(CASE WHEN actual_demand_qty > fulfilled_qty THEN 1 ELSE 0 END) AS short_days\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '300518' AND dc_id = 'DC1' AND demand_date BETWEEN DATE '2026-08-27' AND date_sub(DATE '2026-08-27', -27)",
+        "ms": 0,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    }
+  ],
+  "messages": 27,
+  "model_calls": 3,
+  "receipts": [
+    {
+      "agent": "Planner",
+      "model": "offline-reasoner",
+      "receipt_id": "",
+      "latency_ms": 0,
+      "tokens": 0,
+      "fallback": true
+    },
+    {
+      "agent": "Evaluator",
+      "model": "offline-reasoner",
+      "receipt_id": "",
+      "latency_ms": 0,
+      "tokens": 0,
+      "fallback": true
+    },
+    {
+      "agent": "Writer",
+      "model": "offline-reasoner",
+      "receipt_id": "",
+      "latency_ms": 0,
+      "tokens": 0,
+      "fallback": true
+    }
+  ],
+  "models_used": [
+    "offline-reasoner"
+  ],
+  "elapsed_s": 0.0,
+  "sample_mode": true
+}

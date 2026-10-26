@@ -120,9 +120,14 @@ net of GST and trade margins):
 **Zetaris (data).** The order, planning, warehouse and finance tables live in four separate
 Postgres databases, registered in Zetaris as four sources. Every metric is one SQL
 statement that Zetaris federates across them. Nothing is copied or pre-joined.
+The agents reach Zetaris through its REST API (`POST /api/v1.0/sql-editor/sqls/run`,
+see `agent/data_client.py`); each query's SQL, source and timing is kept as evidence.
 
-**Meterless Nightshift (power).** Every model call goes to Nightshift's local
-OpenAI-compatible runtime, which routes it to NVIDIA Nemotron and returns a
+**Meterless Nightshift (power).** Nightshift is the app's only AI provider. Every model call
+(`agent/llm.py`) is an OpenAI-compatible `POST {METERLESS_BASE_URL}/chat/completions` to the
+local runtime (default `http://127.0.0.1:8088/v1`) with the runtime token and two headers,
+`meterless-app: chain-of-evidence-<agent>` and `meterless-scope: user`. Nightshift routes it
+to NVIDIA Nemotron and returns, alongside the answer, a
 **signed compute receipt** (routed model, latency, tokens, signer key and signature).
 Each call is tagged with the agent that made it (`chain-of-evidence-planner`,
 `-evaluator`, `-writer`, `-intake`), so the receipts show which agent reasoned when.
@@ -138,7 +143,12 @@ core services as the team's shared case board:
 - `ContextBuilderService`: a compact, grounded view of the case for each agent's prompt.
 
 Hypotheses move through states (`testing`, `confirmed`, `rolled back: symptom of …`),
-and a rolled-back cause is linked to the fact that refuted it.
+and a rolled-back cause is linked to the fact that refuted it. It powers the counter-test and
+rollback feature and the evidence chain on every report.
+
+**Test:** `tests/test_world_model.py` checks each service (provenance on every fact,
+idempotent ingest, the append-only trail, hypothesis rollback linked to its refuting fact,
+grounded context) and then the engine inside a full investigation. See [Tests](#tests).
 
 **NVIDIA Nemotron** (`nemotron-3.5-lightning-30b-a3b`) does the reasoning: planning the
 investigation, choosing where to dig deeper, judging borderline signals, interpreting
@@ -146,17 +156,19 @@ the analyst's free-text direction, routing questions to a stockout, and writing 
 
 ## Running it
 
-### Option A: sample mode (no setup beyond Python)
+### Option A: from a clean clone, no services needed
 
-Uses the bundled CSVs and a deterministic offline reasoner in place of Nemotron.
-It is useful for a quick look and as a fallback.
+With no `.env` and no keys, the app falls back to **sample mode** automatically: the bundled
+CSVs stand in for Zetaris and a deterministic offline reasoner stands in for Nemotron (the
+receipts table says so). Python 3.9+ is all it needs.
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-SAMPLE_MODE=true python3 -m agent.server      # open http://localhost:8765
-SAMPLE_MODE=true python3 -m agent.main --event OOS-001
+git clone https://github.com/BarshaGuha/Chain-of-evidence.git && cd Chain-of-evidence
+python3 -m agent.server                  # open http://localhost:8765
+python3 -m agent.main --event OOS-001    # or investigate in the terminal
 ```
+
+`SAMPLE_MODE=true` forces this mode even when keys are present.
 
 ### Option B: live, with Zetaris and Meterless
 
@@ -190,6 +202,52 @@ NVIDIA provider key, and Python 3.9+.
 
 Secrets stay in `.env`, which is git-ignored. The NVIDIA key lives only in Nightshift.
 
+Dependencies: `requests` and `python-dotenv` (`pip install -r requirements.txt`) for live mode;
+sample mode uses only the standard library.
+
+## Usage: sample inputs and outputs
+
+Ask in plain language on the page, by product, brand, SKU code, city or event id. The same
+three questions in the terminal: `python3 -m agent.main --event OOS-00X`.
+
+| Input | Output (headline, then the business case) | How the team got there |
+|---|---|---|
+| *Why did Brightwash detergent run out in Delhi?* (OOS-002) | Recent demand surge not reflected in the forecast. ₹4,72,950 lost in 4 weeks; visible 14 days before; next step to demand planning | 12-week checks all within target; Evaluator rejects "no cause"; loop finds 17.7% in the last 4 weeks, rechecked from 28 raw rows |
+| *Why did Herbana shampoo run out in Mumbai?* (OOS-001) | Transport delays from plant to DC. ₹83,315 lost; visible 21 days before; wrong fix avoided ₹1,32,000 | Two causes confirmed; counter-test rolls back safety stock (4.8% → 42.9% of days, only after the delays) |
+| *What happened with SKU 300452?* (OOS-003) | Safety stock too low **and** DC under-ordering. ₹13,403 lost; chronic for 8 of 12 weeks | Counter-test upholds the safety-stock cause; two independent causes |
+
+A live run on Zetaris and Nemotron (OOS-002, 45 seconds, 30 agent messages) logged these
+Meterless receipts, one per model call:
+
+| Agent | Model (routed by Nightshift) | Receipt | Time | Tokens |
+|---|---|---|---|---|
+| Planner | nvidia/nemotron-3.5-lightning-30b-a3b | rcpt_req_gnzsck3p | 13.6s | 1,324 |
+| Evaluator | nvidia/nemotron-3.5-lightning-30b-a3b | rcpt_req_7pr3h2mn | 11.1s | 1,506 |
+| Writer | nvidia/nemotron-3.5-lightning-30b-a3b | rcpt_req_2c4vyibf | 13.0s | 1,409 |
+
+Full traces of live runs (every message, every fact with its SQL, every receipt) are in
+[`examples/`](examples/).
+
+## Tests
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+Runs in sample mode with the standard library only (about one second):
+
+- `tests/test_world_model.py`: the **Meterless World Model engine** conformance test (7 tests).
+- `tests/test_cases.py`: all six stockouts against the answer key: causes, loops,
+  rollbacks, sign-off and business impact (3 tests).
+
+```
+Ran 10 tests in 0.7s
+OK
+```
+
+`python3 -m agent.diag` checks the live Nightshift connection: it sends the Writer's request
+three times and reports the time, tokens and routed model of each.
+
 ## What each run leaves behind
 
 | File | Contents |
@@ -211,8 +269,11 @@ agent/
   main.py         command line runner and report writer
   server.py       local web interface (standard library only, live updates via SSE)
   web/index.html  the page
+  diag.py         live check of the Nightshift connection
 data/
   generate_data.py, load_data.sh, seed_*.sql, csv/, ANSWER_KEY.md
+tests/            World Model engine test; answer-key test for all six stockouts
+examples/         traces and reports from live runs on Zetaris + Nemotron
 ```
 
 ## Known issues
@@ -237,6 +298,7 @@ data/
 ## Credits
 
 - The root-cause tree is inspired by a stockout root-cause framework shared by a
-  supply chain colleague. Only the framework idea was used; all data is synthetic.
+  colleague who is a supply-chain functional consultant. Only the framework idea was used;
+  all data is synthetic.
 - Built with Claude Code as the AI coding assistant.
 - Zetaris, Meterless and NVIDIA Nemotron are the sponsor technologies described above.

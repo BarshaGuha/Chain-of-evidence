@@ -456,7 +456,7 @@ function onDone(r){
   $('answer').innerHTML = `<div class="answer"><div class="top">
       <div class="k">The answer · ${esc(r.case.product_name)} at ${esc(r.case.dc_name)} · ${esc(r.case.case_id)} · ${r.status==='approved'?'signed off by the Evaluator':'evidence-only template'}</div>
       <div class="h">${esc(rep.headline)}</div></div>
-      <div class="inner"><div class="impact">${tiles}</div><h2>Chain of evidence</h2>${chains}${rbs}${econ}</div></div>`;
+      <div class="inner"><div class="impact">${tiles}</div><h2>Chain of evidence <span style="font-weight:500;letter-spacing:0;text-transform:none;color:var(--faint)">· every step a verified fact on the Meterless World Model case board</span></h2>${chains}${rbs}${econ}</div></div>`;
   const ro = (rep.ruled_out||[]).map(x => `<li><b>${esc(x.driver)}</b>: ${esc(x.why)}</li>`).join('');
   const rc = (r.receipts||[]).map(x => `<tr><td>${esc(x.agent)}</td><td class="m">${esc(x.model)}${x.fallback?' (fallback)':''}</td>
     <td class="m">${esc(x.receipt_id||'–')}</td><td>${(x.latency_ms/1000).toFixed(1)}s</td><td>${x.tokens||'–'}</td></tr>`).join('');

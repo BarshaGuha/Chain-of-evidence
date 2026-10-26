@@ -214,6 +214,9 @@ def main():
     mode = "SAMPLE MODE (offline)" if config.SAMPLE_MODE else \
         f"LIVE: Zetaris + {config.METERLESS_MODEL} via Meterless"
     print(f"Chain of Evidence is running ({mode})")
+    if config.AUTO_SAMPLE:
+        print("No .env keys found, so running in SAMPLE MODE. Copy .env.example to .env "
+              "and add your keys to run live on Zetaris and Nemotron.")
     print(f"Open http://localhost:{PORT} in your browser. Press Ctrl+C to stop.")
     try:
         srv.serve_forever()
