@@ -69,7 +69,7 @@ The other 30 SKU–DC pairs (for example Herbana Shampoo 200ml (100231) @ Delhi 
 
 Prices are estimates in the finance system (`scm_finance.sku_economics`) (net price = MRP less GST and trade margins).
 
-| Case | Lost units (28 days from D) | Lost value | Stockout days | Early warning | Wrong fix avoided |
+| Case | Lost units (28 days from D) | Lost value | Stockout days | Early warning | Wasted spend averted |
 |---|---|---|---|---|---|
 | OOS-001 | 877 | ₹83,315 | 4 (30 Jul, 6, 13, 20 Aug) | lead-time overrun from 9 Jul (21 days) | raise safety stock ~2,400 units = ₹1,32,000 at cost, ~₹26,400/yr to carry |
 | OOS-002 | 3,153 | ₹4,72,950 | 6 | recent under-forecast from 6 Aug (14 days) | – |

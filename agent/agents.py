@@ -410,7 +410,7 @@ class Investigator(Agent):
             if w["chronic"]:
                 summary += f"; '{w['cause']}' was off target in {w['weeks_off']} of 12 weeks (chronic)"
         if out["avoided"]:
-            summary += f"; wrong fix avoided: {cur}{out['avoided']['value']:,} of extra stock"
+            summary += f"; wasted spend averted: {cur}{out['avoided']['value']:,} of extra stock"
         self.send("Writer", "impact_result", summary, impact=out, fact_id=fact["fact_id"])
 
 

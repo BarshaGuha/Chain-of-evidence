@@ -446,7 +446,7 @@ function onDone(r){
       tiles += `<div class="imp warn"><div class="k">Early warning</div><div class="n">${w.weeks_off} of 12 weeks</div>
         <div class="s">${esc(w.cause)} was off target in ${w.weeks_off} of the 12 weeks before: a chronic problem</div></div>`; }
     if (im.avoided){ const a = im.avoided;
-      tiles += `<div class="imp save"><div class="k">Wrong fix avoided</div><div class="n">${money(a.value)}</div>
+      tiles += `<div class="imp save"><div class="k">Wasted spend averted</div><div class="n">${money(a.value)}</div>
         <div class="s">Raising safety stock by ~${a.units.toLocaleString()} units ${esc(a.reason)}. That ties up this much stock, ~${money(a.carrying_per_year)} a year to carry.</div></div>`; }
     else tiles += `<div class="imp"><div class="k">Owner</div><div class="n" style="font-size:20px">${esc((r.chains||[]).map(c => c.owner).filter(Boolean).join(' · ') || '–')}</div>
         <div class="s">Each cause is routed to the team that can fix it, with a concrete next step</div></div>`;
