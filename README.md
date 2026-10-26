@@ -207,14 +207,78 @@ sample mode uses only the standard library.
 
 ## Usage: sample inputs and outputs
 
-Ask in plain language on the page, by product, brand, SKU code, city or event id. The same
-three questions in the terminal: `python3 -m agent.main --event OOS-00X`.
+Ask in plain language on the page (by product, brand, SKU code, city or event id), or in the
+terminal with `python3 -m agent.main --event OOS-00X`. Below are three real questions, the answer
+the team gives, and each step it took. Every number is computed by a SQL query through Zetaris
+over the 12 weeks before the stockout day, unless a step says otherwise.
 
-| Input | Output (headline, then the business case) | How the team got there |
+**What the checks measure** (a check *flags* a possible cause when it crosses its threshold):
+
+| Check | What it means | Flags when |
 |---|---|---|
-| *Why did Brightwash detergent run out in Delhi?* (OOS-002) | Recent demand surge not reflected in the forecast. ₹4,72,950 lost in 4 weeks; visible 14 days before; next step to demand planning | 12-week checks all within target; Evaluator rejects "no cause"; loop finds 17.7% in the last 4 weeks, rechecked from 28 raw rows |
-| *Why did Herbana shampoo run out in Mumbai?* (OOS-001) | Transport delays from plant to DC. ₹83,315 lost; visible 21 days before; wrong fix avoided ₹1,32,000 | Two causes confirmed; counter-test rolls back safety stock (4.8% → 42.9% of days, only after the delays) |
-| *What happened with SKU 300452?* (OOS-003) | Safety stock too low **and** DC under-ordering. ₹13,403 lost; chronic for 8 of 12 weeks | Counter-test upholds the safety-stock cause; two independent causes |
+| Fill on-time % | Share of ordered units that arrived in full **and** on time | below 95% |
+| Fill rate % | Share of ordered units the plant shipped at all (late or not) | below 95% |
+| Lead-time overrun % | How much longer deliveries took than the standard lead time, on average | above 15% |
+| Under-forecast error % | How far actual demand exceeded the forecast: (demand − forecast) ÷ demand | above 10% |
+| Safety-stock breaches % | Share of days the DC held less stock than its safety-stock target | above 20% |
+| Order quantity deviation % | How far the DC ordered below what its stocking policy called for | above 15% |
+
+### Example 1: Brightwash Liquid Detergent 1L at Delhi DC (OOS-002, stockout on 20 Aug 2026)
+
+**Question:** *Why did Brightwash detergent run out in Delhi?*
+
+**Answer:** A recent demand surge that the forecast did not pick up. ₹4,72,950 of sales lost in the
+4 weeks from the stockout; the problem was visible 14 days earlier; next step goes to demand planning.
+
+**How the team got there:**
+
+1. **Supply is ruled out.** Fill on-time and fill rate are 99–100%: the plant delivered everything, on time.
+2. **The forecast looks fine at first.** Over 12 weeks, demand was only 6.4% above forecast, below the
+   10% threshold. A simple checklist would stop here with "no cause found".
+3. **The Evaluator rejects "no cause".** A stockout happened, so something explains it. It sends the
+   Investigator back to look at a shorter, more recent window.
+4. **The last 4 weeks show the problem.** From 23 Jul to 19 Aug, demand was 17.7% above forecast, above
+   the 10% threshold. A surge of about 65% that began on 10 Aug was hidden inside the 12-week average.
+5. **The number is double-checked.** The Investigator recalculates the 17.7% from the 28 underlying daily
+   rows (one row per day: actual demand vs forecast) to confirm the summary query.
+
+### Example 2: Herbana Shampoo 200ml at Mumbai DC (OOS-001, stockout on 30 Jul 2026)
+
+**Question:** *Why did Herbana shampoo run out in Mumbai?*
+
+**Answer:** Transport delays from the plant to the DC. ₹83,315 of sales lost; the delays were visible
+21 days before the stockout; the wrong fix it avoided would have tied up ₹1,32,000 of stock.
+
+**How the team got there:**
+
+1. **Transport delays are confirmed.** Only 74% of units arrived in full and on time, and deliveries took
+   29% longer than the standard lead time (threshold 15%).
+2. **Plant short-shipping is ruled out.** Fill rate is 99%: the plant shipped the full quantity, just late.
+3. **Low safety stock is also flagged.** The DC was below its safety-stock target on 23.8% of days
+   (threshold 20%), so it is confirmed as a second cause.
+4. **The Evaluator tests whether it is a cause or a side effect.** It splits the 12 weeks in two:
+   breaches were 4.8% of days in weeks 12–7, then 42.9% in weeks 6–1. They started only after the
+   delays began (9 Jul), so low safety stock is a symptom of the delays, not a cause.
+5. **The safety-stock cause is rolled back.** The final answer names transport delays only. Raising
+   safety stock (about 2,400 extra units, ₹1,32,000 at cost) would not have fixed the delays.
+
+### Example 3: Crunchies Cream Biscuits 100g at Mumbai DC (SKU 300452, OOS-003, stockout on 31 Jul 2026)
+
+**Question:** *What happened with SKU 300452?*
+
+**Answer:** Two independent causes: the safety-stock target is too low, **and** the DC ordered less
+than its policy called for. ₹13,403 of sales lost; the safety-stock problem was present in 8 of the
+12 weeks (a long-running issue, not a recent one).
+
+**How the team got there:**
+
+1. **Supply and forecast are ruled out.** Deliveries were on time and the forecast was unbiased.
+2. **Ordering is flagged.** The DC ordered 19.6% less than its stocking policy called for (threshold 15%).
+3. **Safety stock is flagged.** The DC was below its safety-stock target on 31% of days (threshold 20%).
+4. **The Evaluator runs the same side-effect test as in Example 2.** This time breaches were already
+   35.7% of days in weeks 12–7 (then 26.2% in weeks 6–1): the problem existed before anything else went
+   wrong. It is a genuine cause, so it stays.
+5. **Both causes are reported.** Fixing only one would leave the other in place.
 
 A live run on Zetaris and Nemotron (OOS-002, 45 seconds, 30 agent messages) logged these
 Meterless receipts, one per model call:
