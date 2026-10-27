@@ -8,11 +8,11 @@
     "oos_date": "2026-08-06",
     "lost_demand_qty": 83
   },
-  "run_id": "OOS-004_20261026_145514",
+  "run_id": "OOS-004_20261027_215147",
   "status": "approved",
   "report": {
-    "headline": "Transport delays from plant to DC caused the Pearlguard Toothpaste 150g stockout at Bengaluru DC on 6 Aug",
-    "narrative": "Transport delays from plant to DC caused the Pearlguard Toothpaste 150g stockout at Bengaluru DC on 6 Aug. The team first confirmed 'Safety stock set too low for demand variability', then rolled it back: breaches were 2.4% in weeks 12-7 but 57.1% in weeks 6-1: they began only after 'Transport delays from plant to DC' started draining stock, so this is a symptom, not a root cause.",
+    "headline": "Pearlguard Toothpaste 150g goes out of stock at Bengaluru DC on 6 Aug due to transport delays.",
+    "narrative": "Root cause is transport delays from plant to DC, with deliveries performing at 35.0% of the standard lead time under logistics ownership. A warning sign appeared 35 days before the stockout, and safety stock inadequacy was ruled out, as the issue only emerged after the true cause took effect (2.4% of days before, 57.1% after).",
     "causes": [
       {
         "cause": "Transport delays from plant to DC",
@@ -31,7 +31,7 @@
       },
       {
         "driver": "Safety Stock Breach Occurrences %",
-        "why": "rolled back after counter-test: breaches were 2.4% in weeks 12-7 but 57.1% in weeks 6-1: they began only after 'Transport delays from plant to DC' started draining stock, so this is a symptom, not a root cause"
+        "why": "rolled back after counter-test: stock was below safety stock on 2.4% of days in the first 6 of the 12 weeks, but on 57.1% in the last 6: the shortfalls began only after 'Transport delays from plant to DC' started draining stock, so this is a symptom, not a root cause"
       }
     ]
   },
@@ -46,8 +46,8 @@
     {
       "metric_id": "safety_stock_breach_pct",
       "symptom_of": "Transport delays from plant to DC",
-      "reason": "breaches were 2.4% in weeks 12-7 but 57.1% in weeks 6-1: they began only after 'Transport delays from plant to DC' started draining stock, so this is a symptom, not a root cause",
-      "early": 0.023809523809523808,
+      "reason": "stock was below safety stock on 2.4% of days in the first 6 of the 12 weeks, but on 57.1% in the last 6: the shortfalls began only after 'Transport delays from plant to DC' started draining stock, so this is a symptom, not a root cause",
+      "early": 0.0238095238095238,
       "late": 0.5714285714285714,
       "fact_id": "F-safety_stock_breach_pct-counter_test-7b62c263c180",
       "cause": "Safety stock set too low for demand variability"
@@ -63,7 +63,7 @@
           "label": "Qty Fill On-Time %",
           "branch": "supply",
           "plain": "Ordered quantity delivered in full and on time",
-          "value": 0.49221341251539946,
+          "value": 0.4922134125153994,
           "threshold": "below 95%",
           "status": "flagged"
         },
@@ -72,7 +72,7 @@
           "label": "Qty On-Time %",
           "branch": "supply",
           "plain": "Quantity that arrived by the required date",
-          "value": 0.49708106038855393,
+          "value": 0.4970810603885539,
           "threshold": "below 95%",
           "status": "flagged"
         },
@@ -81,7 +81,7 @@
           "label": "Lead Time Overrun %",
           "branch": "supply",
           "plain": "Deliveries slower than the standard lead time",
-          "value": 0.35000000000000003,
+          "value": 0.35,
           "threshold": "above 15%",
           "status": "flagged"
         }
@@ -125,9 +125,9 @@
     {
       "counter_test": "safety_stock_breach_pct",
       "outcome": "rolled_back",
-      "early": 0.023809523809523808,
+      "early": 0.0238095238095238,
       "late": 0.5714285714285714,
-      "reason": "breaches were 2.4% in weeks 12-7 but 57.1% in weeks 6-1: they began only after 'Transport delays from plant to DC' started draining stock, so this is a symptom, not a root cause"
+      "reason": "stock was below safety stock on 2.4% of days in the first 6 of the 12 weeks, but on 57.1% in the last 6: the shortfalls began only after 'Transport delays from plant to DC' started draining stock, so this is a symptom, not a root cause"
     }
   ],
   "evidence": [
@@ -136,7 +136,7 @@
       "label": "Qty Fill On-Time %",
       "branch": "supply",
       "purpose": "primary",
-      "value": 0.49221341251539946,
+      "value": 0.4922134125153994,
       "threshold": "below 95%",
       "status": "flagged",
       "support": {
@@ -144,9 +144,9 @@
         "ordered_qty": 31657
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * SUM(CASE WHEN delivery_date <= required_delivery_date\n                      THEN COALESCE(accepted_qty, 0) ELSE 0 END)\n       / NULLIF(SUM(ordered_qty), 0) AS value,\n       COUNT(*) AS orders_in_window, SUM(ordered_qty) AS ordered_qty\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '100562' AND dc_id = 'DC3'\n  AND required_delivery_date BETWEEN date_sub(DATE '2026-08-06', 84) AND date_sub(DATE '2026-08-06', 1)",
-        "ms": 0,
+        "ms": 447,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -156,7 +156,7 @@
       "label": "Under-Forecast Error %",
       "branch": "demand",
       "purpose": "primary",
-      "value": -0.010706910246227164,
+      "value": -0.0107069102462272,
       "threshold": "above 10%",
       "status": "clear",
       "support": {
@@ -164,9 +164,9 @@
         "forecast_qty": 31812
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * (SUM(actual_demand_qty) - SUM(forecast_qty))\n       / NULLIF(SUM(actual_demand_qty), 0) AS value,\n       SUM(actual_demand_qty) AS actual_demand_qty, SUM(forecast_qty) AS forecast_qty\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '100562' AND dc_id = 'DC3' AND demand_date BETWEEN date_sub(DATE '2026-08-06', 84) AND date_sub(DATE '2026-08-06', 1)",
-        "ms": 0,
+        "ms": 305,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -182,12 +182,12 @@
       "support": {
         "breach_days": 25,
         "days_observed": 84,
-        "safety_stock_days": 5
+        "safety_stock_days": 5.0
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * SUM(CASE WHEN s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END)\n       / NULLIF(COUNT(*), 0) AS value,\n       SUM(CASE WHEN s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END) AS breach_days,\n       COUNT(*) AS days_observed, MAX(n.safety_stock_days) AS safety_stock_days\nFROM scm_wms.inventory_snapshots s\nJOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\nWHERE s.sku_id = '100562' AND s.dc_id = 'DC3' AND s.snapshot_date BETWEEN date_sub(DATE '2026-08-06', 84) AND date_sub(DATE '2026-08-06', 1)",
-        "ms": 0,
+        "ms": 574,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -205,9 +205,9 @@
         "compared_field": "value"
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT order_id, ordered_qty, accepted_qty, dispatch_date, required_delivery_date,\n       delivery_date, std_lead_time_days\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '100562' AND dc_id = 'DC3' AND required_delivery_date BETWEEN date_sub(DATE '2026-08-06', 84) AND date_sub(DATE '2026-08-06', 1)\nORDER BY required_delivery_date",
-        "ms": 0,
+        "ms": 1630,
         "attempts": 1,
         "rows_returned": 12
       }
@@ -225,9 +225,9 @@
         "compared_field": "value"
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT s.snapshot_date, s.on_hand_qty, s.days_on_hand, n.safety_stock_days\nFROM scm_wms.inventory_snapshots s\nJOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\nWHERE s.sku_id = '100562' AND s.dc_id = 'DC3' AND s.snapshot_date BETWEEN date_sub(DATE '2026-08-06', 84) AND date_sub(DATE '2026-08-06', 1)\nORDER BY s.snapshot_date",
-        "ms": 0,
+        "ms": 774,
         "attempts": 1,
         "rows_returned": 84
       }
@@ -245,9 +245,9 @@
         "ordered_qty": 31657
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * SUM(COALESCE(accepted_qty, 0)) / NULLIF(SUM(ordered_qty), 0) AS value,\n       SUM(COALESCE(accepted_qty, 0)) AS accepted_qty, SUM(ordered_qty) AS ordered_qty\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '100562' AND dc_id = 'DC3'\n  AND required_delivery_date BETWEEN date_sub(DATE '2026-08-06', 84) AND date_sub(DATE '2026-08-06', 1)",
-        "ms": 0,
+        "ms": 359,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -257,7 +257,7 @@
       "label": "Qty On-Time %",
       "branch": "supply",
       "purpose": "primary",
-      "value": 0.49708106038855393,
+      "value": 0.4970810603885539,
       "threshold": "below 95%",
       "status": "flagged",
       "support": {
@@ -265,9 +265,9 @@
         "orders_in_window": 12
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * SUM(CASE WHEN delivery_date <= required_delivery_date\n                      THEN accepted_qty ELSE 0 END)\n       / NULLIF(SUM(accepted_qty), 0) AS value,\n       SUM(CASE WHEN delivery_date > required_delivery_date THEN 1 ELSE 0 END) AS late_orders,\n       COUNT(*) AS orders_in_window\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '100562' AND dc_id = 'DC3'\n  AND required_delivery_date BETWEEN date_sub(DATE '2026-08-06', 84) AND date_sub(DATE '2026-08-06', 1) AND accepted_qty IS NOT NULL",
-        "ms": 0,
+        "ms": 324,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -285,9 +285,9 @@
         "compared_field": "value"
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT order_id, ordered_qty, accepted_qty, dispatch_date, required_delivery_date,\n       delivery_date, std_lead_time_days\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '100562' AND dc_id = 'DC3' AND required_delivery_date BETWEEN date_sub(DATE '2026-08-06', 84) AND date_sub(DATE '2026-08-06', 1)\nORDER BY required_delivery_date",
-        "ms": 0,
+        "ms": 196,
         "attempts": 1,
         "rows_returned": 12
       }
@@ -297,7 +297,7 @@
       "label": "Lead Time Overrun %",
       "branch": "supply",
       "purpose": "primary",
-      "value": 0.35000000000000003,
+      "value": 0.35,
       "threshold": "above 15%",
       "status": "flagged",
       "support": {
@@ -306,9 +306,9 @@
         "late_or_overdue_orders": 6
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT AVG(1.0 * GREATEST(0, datediff(LEAST(COALESCE(delivery_date, DATE '2026-08-06'), DATE '2026-08-06'),\n                                      dispatch_date) - std_lead_time_days)\n           / std_lead_time_days) AS value,\n       AVG(1.0 * datediff(LEAST(COALESCE(delivery_date, DATE '2026-08-06'), DATE '2026-08-06'),\n                          dispatch_date)) AS avg_actual_lead_time_days,\n       MAX(std_lead_time_days) AS std_lead_time_days,\n       SUM(CASE WHEN COALESCE(delivery_date, DATE '2026-08-06') > required_delivery_date\n                THEN 1 ELSE 0 END) AS late_or_overdue_orders\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '100562' AND dc_id = 'DC3'\n  AND required_delivery_date BETWEEN date_sub(DATE '2026-08-06', 84) AND date_sub(DATE '2026-08-06', 1)",
-        "ms": 0,
+        "ms": 309,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -326,30 +326,30 @@
         "compared_field": "value"
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT order_id, ordered_qty, accepted_qty, dispatch_date, required_delivery_date,\n       delivery_date, std_lead_time_days\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '100562' AND dc_id = 'DC3' AND required_delivery_date BETWEEN date_sub(DATE '2026-08-06', 84) AND date_sub(DATE '2026-08-06', 1)\nORDER BY required_delivery_date",
-        "ms": 0,
+        "ms": 271,
         "attempts": 1,
         "rows_returned": 12
       }
     },
     {
       "fact_id": "F-safety_stock_breach_pct-counter_test-7b62c263c180",
-      "label": "Breach onset test (weeks 12-7 vs weeks 6-1)",
+      "label": "Breach onset test (first 6 vs last 6 of the 12 weeks)",
       "branch": "inventory_norm",
       "purpose": "counter_test",
-      "value": 0.023809523809523808,
+      "value": 0.0238095238095238,
       "threshold": "-",
       "status": "counter_test",
       "support": {
-        "early_rate": 0.023809523809523808,
+        "early_rate": 0.0238095238095238,
         "late_rate": 0.5714285714285714,
         "days_observed": 84
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * SUM(CASE WHEN s.snapshot_date < date_sub(DATE '2026-08-06', 42)\n                       AND s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END)\n       / NULLIF(SUM(CASE WHEN s.snapshot_date < date_sub(DATE '2026-08-06', 42) THEN 1 ELSE 0 END), 0) AS early_rate,\n       1.0 * SUM(CASE WHEN s.snapshot_date >= date_sub(DATE '2026-08-06', 42)\n                       AND s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END)\n       / NULLIF(SUM(CASE WHEN s.snapshot_date >= date_sub(DATE '2026-08-06', 42) THEN 1 ELSE 0 END), 0) AS late_rate,\n       COUNT(*) AS days_observed\nFROM scm_wms.inventory_snapshots s\nJOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\nWHERE s.sku_id = '100562' AND s.dc_id = 'DC3' AND s.snapshot_date BETWEEN date_sub(DATE '2026-08-06', 84) AND date_sub(DATE '2026-08-06', 1)",
-        "ms": 0,
+        "ms": 456,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -367,9 +367,9 @@
         "stockout_days": 1
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT SUM(actual_demand_qty - fulfilled_qty) AS lost_units,\n       SUM(CASE WHEN actual_demand_qty > fulfilled_qty THEN 1 ELSE 0 END) AS short_days\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '100562' AND dc_id = 'DC3' AND demand_date BETWEEN DATE '2026-08-06' AND date_sub(DATE '2026-08-06', -27)",
-        "ms": 0,
+        "ms": 254,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -380,24 +380,24 @@
   "receipts": [
     {
       "agent": "Planner",
-      "model": "offline-reasoner",
-      "receipt_id": "",
-      "latency_ms": 0,
-      "tokens": 0,
-      "fallback": true
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "receipt_id": "rcpt_req_27gpbncv",
+      "latency_ms": 13731,
+      "tokens": 1234,
+      "fallback": false
     },
     {
       "agent": "Writer",
-      "model": "offline-reasoner",
-      "receipt_id": "",
-      "latency_ms": 0,
-      "tokens": 0,
-      "fallback": true
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "receipt_id": "rcpt_req_7w05g147",
+      "latency_ms": 32332,
+      "tokens": 2214,
+      "fallback": false
     }
   ],
   "models_used": [
-    "offline-reasoner"
+    "nvidia/nemotron-3.5-lightning-30b-a3b"
   ],
-  "elapsed_s": 0.0,
-  "sample_mode": true
+  "elapsed_s": 54.1,
+  "sample_mode": false
 }

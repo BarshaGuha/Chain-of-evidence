@@ -8,11 +8,11 @@
     "oos_date": "2026-08-27",
     "lost_demand_qty": 463
   },
-  "run_id": "OOS-005_20261026_145514",
+  "run_id": "OOS-005_20261027_215242",
   "status": "approved",
   "report": {
-    "headline": "Recent demand surge not reflected in the forecast caused the Zippy Masala Noodles 4-pack stockout at Mumbai DC on 27 Aug",
-    "narrative": "Recent demand surge not reflected in the forecast caused the Zippy Masala Noodles 4-pack stockout at Mumbai DC on 27 Aug. The stockout repeated on 4 more day(s) in the following 28 days, so the cause is still active.",
+    "headline": "Zippy Masala Noodles 4-pack goes out of stock at Mumbai DC due to demand surge.",
+    "narrative": "The stockout resulted from a demand surge that exceeded forecast by 16.5% over the last four weeks, owned by the demand planning team. A warning sign appeared 14 days before the August 27th stockout at the Mumbai DC.",
     "causes": [
       {
         "cause": "Recent demand surge not reflected in the forecast",
@@ -36,6 +36,10 @@
       {
         "driver": "Order Qty Deviation %",
         "why": "7.0% vs threshold above 15%: within normal range"
+      },
+      {
+        "driver": "Lead Time Overrun %",
+        "why": "0.0% vs threshold above 15%: within normal range"
       }
     ]
   },
@@ -57,7 +61,7 @@
           "label": "Under-Forecast Error %",
           "branch": "demand",
           "plain": "Demand above forecast, last 12 weeks",
-          "value": 0.06705807551304771,
+          "value": 0.0670580755130477,
           "threshold": "above 10%",
           "status": "clear"
         },
@@ -66,7 +70,7 @@
           "label": "Under-Forecast Error % (last 4 weeks)",
           "branch": "demand",
           "plain": "Demand above forecast, last 4 weeks",
-          "value": 0.16510496113895548,
+          "value": 0.1651049611389555,
           "threshold": "above 10%",
           "status": "flagged"
         }
@@ -107,10 +111,11 @@
     {
       "loop": 1,
       "dig_deeper": [
-        "under_forecast_error_recent_pct"
+        "under_forecast_error_recent_pct",
+        "lead_time_overrun_pct"
       ],
-      "reason": "Supply was healthy and the 12-week forecast error is small, so look for a recent demand change hidden in the long average.",
-      "reasoner": "offline-reasoner"
+      "reason": "These two checks investigate recent demand volatility and actual transport lead times, which the primary metrics and ruled-out hypotheses did not capture.",
+      "reasoner": "nvidia/nemotron-3.5-lightning-30b-a3b"
     }
   ],
   "evidence": [
@@ -127,9 +132,9 @@
         "ordered_qty": 69274
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * SUM(CASE WHEN delivery_date <= required_delivery_date\n                      THEN COALESCE(accepted_qty, 0) ELSE 0 END)\n       / NULLIF(SUM(ordered_qty), 0) AS value,\n       COUNT(*) AS orders_in_window, SUM(ordered_qty) AS ordered_qty\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '300518' AND dc_id = 'DC1'\n  AND required_delivery_date BETWEEN date_sub(DATE '2026-08-27', 84) AND date_sub(DATE '2026-08-27', 1)",
-        "ms": 0,
+        "ms": 1034,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -139,7 +144,7 @@
       "label": "Under-Forecast Error %",
       "branch": "demand",
       "purpose": "primary",
-      "value": 0.06705807551304771,
+      "value": 0.0670580755130477,
       "threshold": "above 10%",
       "status": "clear",
       "support": {
@@ -147,9 +152,9 @@
         "forecast_qty": 68964
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * (SUM(actual_demand_qty) - SUM(forecast_qty))\n       / NULLIF(SUM(actual_demand_qty), 0) AS value,\n       SUM(actual_demand_qty) AS actual_demand_qty, SUM(forecast_qty) AS forecast_qty\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '300518' AND dc_id = 'DC1' AND demand_date BETWEEN date_sub(DATE '2026-08-27', 84) AND date_sub(DATE '2026-08-27', 1)",
-        "ms": 0,
+        "ms": 416,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -159,18 +164,18 @@
       "label": "Safety Stock Breach Occurrences %",
       "branch": "inventory_norm",
       "purpose": "primary",
-      "value": 0.11904761904761904,
+      "value": 0.119047619047619,
       "threshold": "above 20%",
       "status": "clear",
       "support": {
         "breach_days": 10,
         "days_observed": 84,
-        "safety_stock_days": 5
+        "safety_stock_days": 5.0
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * SUM(CASE WHEN s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END)\n       / NULLIF(COUNT(*), 0) AS value,\n       SUM(CASE WHEN s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END) AS breach_days,\n       COUNT(*) AS days_observed, MAX(n.safety_stock_days) AS safety_stock_days\nFROM scm_wms.inventory_snapshots s\nJOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\nWHERE s.sku_id = '300518' AND s.dc_id = 'DC1' AND s.snapshot_date BETWEEN date_sub(DATE '2026-08-27', 84) AND date_sub(DATE '2026-08-27', 1)",
-        "ms": 0,
+        "ms": 1088,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -180,7 +185,7 @@
       "label": "Order Qty Deviation %",
       "branch": "supply",
       "purpose": "primary",
-      "value": 0.0704845223878594,
+      "value": 0.070484522,
       "threshold": "above 15%",
       "status": "clear",
       "support": {
@@ -188,9 +193,9 @@
         "theoretical_order_qty": 74527.0
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "WITH actual AS (\n  SELECT COALESCE(SUM(ordered_qty), 0) AS qty\n  FROM scm_orders.replenishment_orders\n  WHERE sku_id = '300518' AND dc_id = 'DC1' AND required_delivery_date BETWEEN date_sub(DATE '2026-08-27', 84) AND date_sub(DATE '2026-08-27', 1)),\ninv_d1 AS (\n  SELECT on_hand_qty FROM scm_wms.inventory_snapshots\n  WHERE sku_id = '300518' AND dc_id = 'DC1'\n    AND snapshot_date = date_sub(DATE '2026-08-27', 84 + 1)),\ndesign_d AS (\n  SELECT s.fwd_avg_daily_forecast * n.inventory_norm_days AS qty\n  FROM scm_wms.inventory_snapshots s\n  JOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\n  WHERE s.sku_id = '300518' AND s.dc_id = 'DC1'\n    AND s.snapshot_date = date_sub(DATE '2026-08-27', 1)),\nfc AS (\n  SELECT SUM(forecast_qty) AS qty FROM scm_planning_01.demand_daily\n  WHERE sku_id = '300518' AND dc_id = 'DC1' AND demand_date BETWEEN date_sub(DATE '2026-08-27', 84) AND date_sub(DATE '2026-08-27', 1))\nSELECT 1 - 1.0 * a.qty / NULLIF(GREATEST(0, dd.qty - i.on_hand_qty + f.qty), 0) AS value,\n       a.qty AS actual_ordered_qty,\n       GREATEST(0, dd.qty - i.on_hand_qty + f.qty) AS theoretical_order_qty\nFROM actual a CROSS JOIN inv_d1 i CROSS JOIN design_d dd CROSS JOIN fc f",
-        "ms": 1,
+        "ms": 2550,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -200,7 +205,7 @@
       "label": "Under-Forecast Error % (last 4 weeks)",
       "branch": "demand",
       "purpose": "drill_down",
-      "value": 0.16510496113895548,
+      "value": 0.1651049611389555,
       "threshold": "above 10%",
       "status": "flagged",
       "support": {
@@ -208,9 +213,30 @@
         "forecast_qty": 22988
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * (SUM(actual_demand_qty) - SUM(forecast_qty))\n       / NULLIF(SUM(actual_demand_qty), 0) AS value,\n       SUM(actual_demand_qty) AS actual_demand_qty, SUM(forecast_qty) AS forecast_qty\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '300518' AND dc_id = 'DC1'\n  AND demand_date BETWEEN date_sub(DATE '2026-08-27', 28) AND date_sub(DATE '2026-08-27', 1)",
-        "ms": 0,
+        "ms": 627,
+        "attempts": 1,
+        "rows_returned": 1
+      }
+    },
+    {
+      "fact_id": "F-lead_time_overrun_pct-drill_down-48fdb777ed90",
+      "label": "Lead Time Overrun %",
+      "branch": "supply",
+      "purpose": "drill_down",
+      "value": 0.0,
+      "threshold": "above 15%",
+      "status": "clear",
+      "support": {
+        "avg_actual_lead_time_days": 4.0,
+        "std_lead_time_days": 4,
+        "late_or_overdue_orders": 0
+      },
+      "provenance": {
+        "source": "zetaris",
+        "sql": "SELECT AVG(1.0 * GREATEST(0, datediff(LEAST(COALESCE(delivery_date, DATE '2026-08-27'), DATE '2026-08-27'),\n                                      dispatch_date) - std_lead_time_days)\n           / std_lead_time_days) AS value,\n       AVG(1.0 * datediff(LEAST(COALESCE(delivery_date, DATE '2026-08-27'), DATE '2026-08-27'),\n                          dispatch_date)) AS avg_actual_lead_time_days,\n       MAX(std_lead_time_days) AS std_lead_time_days,\n       SUM(CASE WHEN COALESCE(delivery_date, DATE '2026-08-27') > required_delivery_date\n                THEN 1 ELSE 0 END) AS late_or_overdue_orders\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '300518' AND dc_id = 'DC1'\n  AND required_delivery_date BETWEEN date_sub(DATE '2026-08-27', 84) AND date_sub(DATE '2026-08-27', 1)",
+        "ms": 309,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -228,9 +254,9 @@
         "compared_field": "value"
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT demand_date, forecast_qty, actual_demand_qty\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '300518' AND dc_id = 'DC1'\n  AND demand_date BETWEEN date_sub(DATE '2026-08-27', 28) AND date_sub(DATE '2026-08-27', 1)\nORDER BY demand_date",
-        "ms": 0,
+        "ms": 199,
         "attempts": 1,
         "rows_returned": 28
       }
@@ -248,45 +274,45 @@
         "stockout_days": 5
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT SUM(actual_demand_qty - fulfilled_qty) AS lost_units,\n       SUM(CASE WHEN actual_demand_qty > fulfilled_qty THEN 1 ELSE 0 END) AS short_days\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '300518' AND dc_id = 'DC1' AND demand_date BETWEEN DATE '2026-08-27' AND date_sub(DATE '2026-08-27', -27)",
-        "ms": 0,
+        "ms": 237,
         "attempts": 1,
         "rows_returned": 1
       }
     }
   ],
-  "messages": 27,
+  "messages": 30,
   "model_calls": 3,
   "receipts": [
     {
       "agent": "Planner",
-      "model": "offline-reasoner",
-      "receipt_id": "",
-      "latency_ms": 0,
-      "tokens": 0,
-      "fallback": true
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "receipt_id": "rcpt_req_1c6acci0",
+      "latency_ms": 36661,
+      "tokens": 1085,
+      "fallback": false
     },
     {
       "agent": "Evaluator",
-      "model": "offline-reasoner",
-      "receipt_id": "",
-      "latency_ms": 0,
-      "tokens": 0,
-      "fallback": true
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "receipt_id": "rcpt_req_md3pnad6",
+      "latency_ms": 17724,
+      "tokens": 1252,
+      "fallback": false
     },
     {
       "agent": "Writer",
-      "model": "offline-reasoner",
-      "receipt_id": "",
-      "latency_ms": 0,
-      "tokens": 0,
-      "fallback": true
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "receipt_id": "rcpt_req_328a5g1z",
+      "latency_ms": 25178,
+      "tokens": 1802,
+      "fallback": false
     }
   ],
   "models_used": [
-    "offline-reasoner"
+    "nvidia/nemotron-3.5-lightning-30b-a3b"
   ],
-  "elapsed_s": 0.0,
-  "sample_mode": true
+  "elapsed_s": 86.9,
+  "sample_mode": false
 }

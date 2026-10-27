@@ -8,11 +8,11 @@
     "oos_date": "2026-07-31",
     "lost_demand_qty": 223
   },
-  "run_id": "OOS-003_20261026_145514",
+  "run_id": "OOS-003_20261027_215052",
   "status": "approved",
   "report": {
-    "headline": "Safety stock set too low for demand variability and DC ordered less than needed caused the Crunchies Cream Biscuits 100g stockout at Mumbai DC on 31 Jul",
-    "narrative": "Safety stock set too low for demand variability and DC ordered less than needed caused the Crunchies Cream Biscuits 100g stockout at Mumbai DC on 31 Jul. The stockout repeated on 2 more day(s) in the following 28 days, so the cause is still active.",
+    "headline": "Crunchies Cream Biscuits 100g went out of stock at Mumbai DC on 31 Jul.",
+    "narrative": "Safety stock was set too low for demand variability, causing stock to fall 31.0% below the safety buffer, owned by inventory policy and planning. DC replenishment planning ordered 19.6% less than needed, compounding the shortfall.",
     "causes": [
       {
         "cause": "Safety stock set too low for demand variability",
@@ -59,7 +59,7 @@
           "label": "Safety Stock Breach Occurrences %",
           "branch": "inventory_norm",
           "plain": "Days stock fell below the safety buffer",
-          "value": 0.30952380952380953,
+          "value": 0.3095238095238095,
           "threshold": "above 20%",
           "status": "flagged"
         }
@@ -74,7 +74,7 @@
           "label": "Qty Fill On-Time %",
           "branch": "supply",
           "plain": "Ordered quantity delivered in full and on time",
-          "value": 0.9928316183751669,
+          "value": 0.9928316183751668,
           "threshold": "below 95%",
           "status": "clear"
         },
@@ -83,7 +83,7 @@
           "label": "Order Qty Deviation %",
           "branch": "supply",
           "plain": "How far DC orders fell short of what policy needed",
-          "value": 0.19638933962557903,
+          "value": 0.19638934,
           "threshold": "above 15%",
           "status": "flagged"
         }
@@ -122,9 +122,9 @@
     {
       "counter_test": "safety_stock_breach_pct",
       "outcome": "upheld",
-      "early": 0.35714285714285715,
+      "early": 0.3571428571428571,
       "late": 0.2619047619047619,
-      "reason": "breaches were already 35.7% in weeks 12-7 (then 26.2%): a chronic problem that predates the other cause, so it stands"
+      "reason": "stock was already below safety stock on 35.7% of days in the first 6 of the 12 weeks (then 26.2% in the last 6): a chronic problem that predates the other cause, so it stands"
     }
   ],
   "evidence": [
@@ -133,7 +133,7 @@
       "label": "Qty Fill On-Time %",
       "branch": "supply",
       "purpose": "primary",
-      "value": 0.9928316183751669,
+      "value": 0.9928316183751668,
       "threshold": "below 95%",
       "status": "clear",
       "support": {
@@ -141,9 +141,9 @@
         "ordered_qty": 46454
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * SUM(CASE WHEN delivery_date <= required_delivery_date\n                      THEN COALESCE(accepted_qty, 0) ELSE 0 END)\n       / NULLIF(SUM(ordered_qty), 0) AS value,\n       COUNT(*) AS orders_in_window, SUM(ordered_qty) AS ordered_qty\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '300452' AND dc_id = 'DC1'\n  AND required_delivery_date BETWEEN date_sub(DATE '2026-07-31', 84) AND date_sub(DATE '2026-07-31', 1)",
-        "ms": 0,
+        "ms": 397,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -153,7 +153,7 @@
       "label": "Under-Forecast Error %",
       "branch": "demand",
       "purpose": "primary",
-      "value": -0.015982930069648536,
+      "value": -0.0159829300696485,
       "threshold": "above 10%",
       "status": "clear",
       "support": {
@@ -161,9 +161,9 @@
         "forecast_qty": 50472
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * (SUM(actual_demand_qty) - SUM(forecast_qty))\n       / NULLIF(SUM(actual_demand_qty), 0) AS value,\n       SUM(actual_demand_qty) AS actual_demand_qty, SUM(forecast_qty) AS forecast_qty\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '300452' AND dc_id = 'DC1' AND demand_date BETWEEN date_sub(DATE '2026-07-31', 84) AND date_sub(DATE '2026-07-31', 1)",
-        "ms": 0,
+        "ms": 904,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -173,18 +173,18 @@
       "label": "Safety Stock Breach Occurrences %",
       "branch": "inventory_norm",
       "purpose": "primary",
-      "value": 0.30952380952380953,
+      "value": 0.3095238095238095,
       "threshold": "above 20%",
       "status": "flagged",
       "support": {
         "breach_days": 26,
         "days_observed": 84,
-        "safety_stock_days": 2
+        "safety_stock_days": 2.0
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * SUM(CASE WHEN s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END)\n       / NULLIF(COUNT(*), 0) AS value,\n       SUM(CASE WHEN s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END) AS breach_days,\n       COUNT(*) AS days_observed, MAX(n.safety_stock_days) AS safety_stock_days\nFROM scm_wms.inventory_snapshots s\nJOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\nWHERE s.sku_id = '300452' AND s.dc_id = 'DC1' AND s.snapshot_date BETWEEN date_sub(DATE '2026-07-31', 84) AND date_sub(DATE '2026-07-31', 1)",
-        "ms": 0,
+        "ms": 1825,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -202,9 +202,9 @@
         "compared_field": "value"
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT s.snapshot_date, s.on_hand_qty, s.days_on_hand, n.safety_stock_days\nFROM scm_wms.inventory_snapshots s\nJOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\nWHERE s.sku_id = '300452' AND s.dc_id = 'DC1' AND s.snapshot_date BETWEEN date_sub(DATE '2026-07-31', 84) AND date_sub(DATE '2026-07-31', 1)\nORDER BY s.snapshot_date",
-        "ms": 0,
+        "ms": 1306,
         "attempts": 1,
         "rows_returned": 84
       }
@@ -214,7 +214,7 @@
       "label": "Order Qty Deviation %",
       "branch": "supply",
       "purpose": "primary",
-      "value": 0.19638933962557903,
+      "value": 0.19638934,
       "threshold": "above 15%",
       "status": "flagged",
       "support": {
@@ -222,9 +222,9 @@
         "theoretical_order_qty": 57806.6
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "WITH actual AS (\n  SELECT COALESCE(SUM(ordered_qty), 0) AS qty\n  FROM scm_orders.replenishment_orders\n  WHERE sku_id = '300452' AND dc_id = 'DC1' AND required_delivery_date BETWEEN date_sub(DATE '2026-07-31', 84) AND date_sub(DATE '2026-07-31', 1)),\ninv_d1 AS (\n  SELECT on_hand_qty FROM scm_wms.inventory_snapshots\n  WHERE sku_id = '300452' AND dc_id = 'DC1'\n    AND snapshot_date = date_sub(DATE '2026-07-31', 84 + 1)),\ndesign_d AS (\n  SELECT s.fwd_avg_daily_forecast * n.inventory_norm_days AS qty\n  FROM scm_wms.inventory_snapshots s\n  JOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\n  WHERE s.sku_id = '300452' AND s.dc_id = 'DC1'\n    AND s.snapshot_date = date_sub(DATE '2026-07-31', 1)),\nfc AS (\n  SELECT SUM(forecast_qty) AS qty FROM scm_planning_01.demand_daily\n  WHERE sku_id = '300452' AND dc_id = 'DC1' AND demand_date BETWEEN date_sub(DATE '2026-07-31', 84) AND date_sub(DATE '2026-07-31', 1))\nSELECT 1 - 1.0 * a.qty / NULLIF(GREATEST(0, dd.qty - i.on_hand_qty + f.qty), 0) AS value,\n       a.qty AS actual_ordered_qty,\n       GREATEST(0, dd.qty - i.on_hand_qty + f.qty) AS theoretical_order_qty\nFROM actual a CROSS JOIN inv_d1 i CROSS JOIN design_d dd CROSS JOIN fc f",
-        "ms": 1,
+        "ms": 1234,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -242,30 +242,30 @@
         "compared_field": "actual_ordered_qty"
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT order_id, ordered_qty, accepted_qty, dispatch_date, required_delivery_date,\n       delivery_date, std_lead_time_days\nFROM scm_orders.replenishment_orders\nWHERE sku_id = '300452' AND dc_id = 'DC1' AND required_delivery_date BETWEEN date_sub(DATE '2026-07-31', 84) AND date_sub(DATE '2026-07-31', 1)\nORDER BY required_delivery_date",
-        "ms": 0,
+        "ms": 310,
         "attempts": 1,
         "rows_returned": 12
       }
     },
     {
       "fact_id": "F-safety_stock_breach_pct-counter_test-60dea986c58f",
-      "label": "Breach onset test (weeks 12-7 vs weeks 6-1)",
+      "label": "Breach onset test (first 6 vs last 6 of the 12 weeks)",
       "branch": "inventory_norm",
       "purpose": "counter_test",
-      "value": 0.35714285714285715,
+      "value": 0.3571428571428571,
       "threshold": "-",
       "status": "counter_test",
       "support": {
-        "early_rate": 0.35714285714285715,
+        "early_rate": 0.3571428571428571,
         "late_rate": 0.2619047619047619,
         "days_observed": 84
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT 1.0 * SUM(CASE WHEN s.snapshot_date < date_sub(DATE '2026-07-31', 42)\n                       AND s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END)\n       / NULLIF(SUM(CASE WHEN s.snapshot_date < date_sub(DATE '2026-07-31', 42) THEN 1 ELSE 0 END), 0) AS early_rate,\n       1.0 * SUM(CASE WHEN s.snapshot_date >= date_sub(DATE '2026-07-31', 42)\n                       AND s.days_on_hand < n.safety_stock_days THEN 1 ELSE 0 END)\n       / NULLIF(SUM(CASE WHEN s.snapshot_date >= date_sub(DATE '2026-07-31', 42) THEN 1 ELSE 0 END), 0) AS late_rate,\n       COUNT(*) AS days_observed\nFROM scm_wms.inventory_snapshots s\nJOIN scm_wms.inventory_norms n ON s.sku_id = n.sku_id AND s.dc_id = n.dc_id\nWHERE s.sku_id = '300452' AND s.dc_id = 'DC1' AND s.snapshot_date BETWEEN date_sub(DATE '2026-07-31', 84) AND date_sub(DATE '2026-07-31', 1)",
-        "ms": 0,
+        "ms": 620,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -283,9 +283,9 @@
         "stockout_days": 3
       },
       "provenance": {
-        "source": "sample-sqlite",
+        "source": "zetaris",
         "sql": "SELECT SUM(actual_demand_qty - fulfilled_qty) AS lost_units,\n       SUM(CASE WHEN actual_demand_qty > fulfilled_qty THEN 1 ELSE 0 END) AS short_days\nFROM scm_planning_01.demand_daily\nWHERE sku_id = '300452' AND dc_id = 'DC1' AND demand_date BETWEEN DATE '2026-07-31' AND date_sub(DATE '2026-07-31', -27)",
-        "ms": 0,
+        "ms": 1203,
         "attempts": 1,
         "rows_returned": 1
       }
@@ -296,24 +296,24 @@
   "receipts": [
     {
       "agent": "Planner",
-      "model": "offline-reasoner",
-      "receipt_id": "",
-      "latency_ms": 0,
-      "tokens": 0,
-      "fallback": true
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "receipt_id": "rcpt_req_dbwp3sdw",
+      "latency_ms": 13123,
+      "tokens": 1056,
+      "fallback": false
     },
     {
       "agent": "Writer",
-      "model": "offline-reasoner",
-      "receipt_id": "",
-      "latency_ms": 0,
-      "tokens": 0,
-      "fallback": true
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "receipt_id": "rcpt_req_irbe1hw7",
+      "latency_ms": 32644,
+      "tokens": 1888,
+      "fallback": false
     }
   ],
   "models_used": [
-    "offline-reasoner"
+    "nvidia/nemotron-3.5-lightning-30b-a3b"
   ],
-  "elapsed_s": 0.0,
-  "sample_mode": true
+  "elapsed_s": 55.0,
+  "sample_mode": false
 }
