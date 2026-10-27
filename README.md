@@ -394,3 +394,12 @@ examples/         traces and reports from live runs on Zetaris + Nemotron
   all data is synthetic.
 - Built with Claude Code as the AI coding assistant.
 - Zetaris, Meterless and NVIDIA Nemotron are the sponsor technologies described above.
+
+## Video 
+
+
+
+
+
+
+
